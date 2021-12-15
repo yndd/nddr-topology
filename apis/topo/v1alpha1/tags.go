@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 const (
-
 	NodePlatform = "platform" // ixdd2, sr1, sr1s
 	NodePosition = "position"
 	NodeIndex    = "index" // index for determinsitic allocations

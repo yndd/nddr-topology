@@ -29,8 +29,8 @@ import (
 const (
 	MaxUint32 = ^uint32(0)
 	MinUint32 = 0
-	MaxInt  = int(MaxUint32 >> 1)
-	MinInt  = -MaxInt - 1
+	MaxInt    = int(MaxUint32 >> 1)
+	MinInt    = -MaxInt - 1
 )
 
 var _ TnList = &TopologyNodeList{}
