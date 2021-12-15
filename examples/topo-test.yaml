@@ -1,0 +1,16 @@
+apiVersion: topo.nddr.yndd.io/v1alpha1
+kind: Topology
+metadata:
+  name: topo-test
+  namespace: default
+spec:
+  topology:
+    kind:
+    - name: srl
+      tag:
+      - key: platform
+        value: ixrd2
+    - name: sros
+      tag:
+      - key: platform
+        value: sr1

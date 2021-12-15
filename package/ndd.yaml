@@ -1,0 +1,8 @@
+
+apiVersion: meta.pkg.ndd.yndd.io/v1
+kind: Intent
+metadata:
+  name: nddr-topology
+spec:
+  controller:
+    image: yndd/nddr-topology-controller:latest

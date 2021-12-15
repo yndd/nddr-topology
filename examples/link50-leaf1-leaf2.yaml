@@ -1,0 +1,22 @@
+apiVersion: topo.nddr.yndd.io/v1alpha1
+kind: TopologyLink
+metadata:
+  name: link50-leaf1-leaf2
+  namespace: default
+spec:
+  topology-name: topo-test
+  link:
+    tag:
+    - key: lag
+      value: "true"
+    endpoints:
+    - node-name: leaf1
+      interface-name: int-1/1/50
+      tag:
+      - key: lag-name
+        value: lag-50
+    - node-name: leaf2
+      interface-name: int-1/1/50
+      tag:
+      - key: lag-name
+        value: lag-50
