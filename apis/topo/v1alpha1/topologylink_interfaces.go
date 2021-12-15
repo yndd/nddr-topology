@@ -173,21 +173,21 @@ func (x *TopologyLink) GetEndpointBTag() map[string]string {
 }
 
 func (x *TopologyLink) GetLag() bool {
-	if _, ok := x.GetTags()[Lag]; ok {
+	if _, ok := x.GetTags()[LinkLag]; ok {
 		return true
 	}
 	return false
 }
 
 func (x *TopologyLink) GetLagAName() string {
-	if n, ok := x.GetEndpointATag()[LagName]; ok {
+	if n, ok := x.GetEndpointATag()[LinkEPLagName]; ok {
 		return n
 	}
 	return ""
 }
 
 func (x *TopologyLink) GetLagBName() string {
-	if n, ok := x.GetEndpointBTag()[LagName]; ok {
+	if n, ok := x.GetEndpointBTag()[LinkEPLagName]; ok {
 		return n
 	}
 	return ""

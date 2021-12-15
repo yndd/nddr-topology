@@ -18,11 +18,19 @@ package v1alpha1
 
 import (
 	"reflect"
+	"strconv"
 
 	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
 	"github.com/yndd/ndd-runtime/pkg/resource"
 	"github.com/yndd/ndd-runtime/pkg/utils"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+const (
+	MaxUint32 = ^uint32(0)
+	MinUint32 = 0
+	MaxInt  = int(MaxUint32 >> 1)
+	MinInt  = -MaxInt - 1
 )
 
 var _ TnList = &TopologyNodeList{}
@@ -57,6 +65,7 @@ type Tn interface {
 	GetTags() map[string]string
 	GetStateTags() map[string]string
 	GetPlatform() string
+	GetNodeIndex() uint32
 	InitializeResource() error
 	SetStatus(string)
 	SetReason(string)
@@ -126,10 +135,20 @@ func (x *TopologyNode) GetStateTags() map[string]string {
 }
 
 func (x *TopologyNode) GetPlatform() string {
-	if p, ok := x.GetStateTags()[Platform]; ok {
-		return p
+	if t, ok := x.GetStateTags()[NodePlatform]; ok {
+		return t
 	}
 	return ""
+}
+
+func (x *TopologyNode) GetNodeIndex() uint32 {
+	if t, ok := x.GetTags()[NodeIndex]; ok {
+		if i, err := strconv.Atoi(t); err == nil {
+			return uint32(i)
+		}
+		return MaxUint32
+	}
+	return MaxUint32
 }
 
 func (x *TopologyNode) InitializeResource() error {
@@ -175,13 +194,13 @@ func (x *TopologyNode) SetReason(s string) {
 
 func (x *TopologyNode) SetPlatform(s string) {
 	for _, tag := range x.Status.TopoTopologyNode.State.Tag {
-		if *tag.Key == Platform {
+		if *tag.Key == NodePlatform {
 			tag.Value = &s
 			return
 		}
 	}
 	x.Status.TopoTopologyNode.State.Tag = append(x.Status.TopoTopologyNode.State.Tag, &NddrTopologyTopologyNodeStateTag{
-		Key:   utils.StringPtr(Platform),
+		Key:   utils.StringPtr(NodePlatform),
 		Value: &s,
 	})
 

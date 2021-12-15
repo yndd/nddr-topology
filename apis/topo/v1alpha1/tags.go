@@ -17,9 +17,15 @@ limitations under the License.
 package v1alpha1
 
 const (
-	Platform     = "platform"
-	Lag          = "lag"
-	LagName      = "lag-name"
-	ClientGroup  = "client-group"
-	NodePosition = "node-position"
+
+	NodePlatform = "platform" // ixdd2, sr1, sr1s
+	NodePosition = "position"
+	NodeIndex    = "index" // index for determinsitic allocations
+	LinkLag      = "lag"   // true or false (default)
+	LinkEPKind   = "kind"  // network(default), access(server, security, dcgw), loop
+	//LinkEPGroup           = "endpoint-group"      // pod1, dcgw1
+	LinkEPLagName = "lag-name" // flexible string
+	//LinkEPMultiHoming     = "multihoming"         // true or false (default)
+	//LinkEPMultiHomingName = "multihoming-name"    // flexible string
+	//LinkEPBreakout        = "breakout"            // -> to be discussed
 )
