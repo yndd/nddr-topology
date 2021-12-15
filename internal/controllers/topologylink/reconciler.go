@@ -289,6 +289,11 @@ func (r *Reconciler) parseLink(ctx context.Context, cr topov1alpha1.Tl) error {
 		return err
 	}
 
+	// for infra links we set the kind at the link level using the information from the spec
+	if cr.GetEndPointAKind() == topov1alpha1.LinkEPKindInfra.String() && cr.GetEndPointBKind() == topov1alpha1.LinkEPKindInfra.String() {
+		cr.SetKind(topov1alpha1.LinkEPKindInfra.String())
+	}
+
 	// check if link is part of a lag
 	if cr.GetLag() {
 		lagNameA := cr.GetLagAName()

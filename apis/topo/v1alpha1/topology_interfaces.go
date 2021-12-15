@@ -107,7 +107,7 @@ func (x *Topology) GetDefaultsTags() map[string]string {
 }
 
 func (x *Topology) GetPlatformFromDefaults() string {
-	if p, ok := x.GetDefaultsTags()[NodePlatform]; ok {
+	if p, ok := x.GetDefaultsTags()[keyNodePlatform]; ok {
 		return p
 	}
 	return ""
@@ -153,7 +153,7 @@ func (x *Topology) GetPlatformByKindName(name string) string {
 	for _, kind := range x.Spec.TopoTopology.Kind {
 		if name == *kind.Name {
 			for _, tag := range kind.Tag {
-				if *tag.Key == NodePlatform {
+				if *tag.Key == keyNodePlatform {
 					return *tag.Value
 				}
 			}

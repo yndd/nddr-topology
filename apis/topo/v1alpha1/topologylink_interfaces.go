@@ -79,6 +79,8 @@ type Tl interface {
 	SetReason(string)
 	SetNodeEndpoint(nodeName string, ep *NddrTopologyTopologyLinkStateNodeEndpoint)
 	GetNodeEndpoints() []*NddrTopologyTopologyLinkStateNode
+	SetKind(s string)
+	GetKind() string
 }
 
 // GetCondition of this Network Node.
@@ -181,7 +183,7 @@ func (x *TopologyLink) GetEndpointBTag() map[string]string {
 }
 
 func (x *TopologyLink) GetEndPointAKind() string {
-	if n, ok := x.GetEndpointATag()[LinkEPKind]; ok {
+	if n, ok := x.GetEndpointATag()[keyLinkEPKind]; ok {
 		return n
 	}
 	// default
@@ -189,7 +191,7 @@ func (x *TopologyLink) GetEndPointAKind() string {
 }
 
 func (x *TopologyLink) GetEndPointBKind() string {
-	if n, ok := x.GetEndpointBTag()[LinkEPKind]; ok {
+	if n, ok := x.GetEndpointBTag()[keyLinkEPKind]; ok {
 		return n
 	}
 	// default
@@ -197,7 +199,7 @@ func (x *TopologyLink) GetEndPointBKind() string {
 }
 
 func (x *TopologyLink) GetEndPointAGroup() string {
-	if n, ok := x.GetEndpointATag()[LinkEPGroup]; ok {
+	if n, ok := x.GetEndpointATag()[keyLinkEPGroup]; ok {
 		return n
 	}
 	// default
@@ -205,7 +207,7 @@ func (x *TopologyLink) GetEndPointAGroup() string {
 }
 
 func (x *TopologyLink) GetEndPointBGroup() string {
-	if n, ok := x.GetEndpointBTag()[LinkEPGroup]; ok {
+	if n, ok := x.GetEndpointBTag()[keyLinkEPGroup]; ok {
 		return n
 	}
 	// default
@@ -213,23 +215,23 @@ func (x *TopologyLink) GetEndPointBGroup() string {
 }
 
 func (x *TopologyLink) GetEndPointAMultiHoming() bool {
-	if _, ok := x.GetEndpointATag()[LinkEPMultiHoming]; ok {
-		return x.GetTags()[LinkEPMultiHoming] == "true" 
+	if _, ok := x.GetEndpointATag()[keyLinkEPMultiHoming]; ok {
+		return x.GetTags()[keyLinkEPMultiHoming] == "true"
 	}
 	// default
 	return false
 }
 
 func (x *TopologyLink) GetEndPointBMultiHoming() bool {
-	if _, ok := x.GetEndpointBTag()[LinkEPMultiHoming]; ok {
-		return x.GetTags()[LinkEPMultiHoming] == "true" 
+	if _, ok := x.GetEndpointBTag()[keyLinkEPMultiHoming]; ok {
+		return x.GetTags()[keyLinkEPMultiHoming] == "true"
 	}
 	// default
 	return false
 }
 
 func (x *TopologyLink) GetEndPointAMultiHomingName() string {
-	if n, ok := x.GetEndpointATag()[LinkEPMultiHoming]; ok {
+	if n, ok := x.GetEndpointATag()[keyLinkEPMultiHoming]; ok {
 		return n
 	}
 	// default
@@ -237,7 +239,7 @@ func (x *TopologyLink) GetEndPointAMultiHomingName() string {
 }
 
 func (x *TopologyLink) GetEndPointBMultiHomingName() string {
-	if n, ok := x.GetEndpointBTag()[LinkEPMultiHoming]; ok {
+	if n, ok := x.GetEndpointBTag()[keyLinkEPMultiHoming]; ok {
 		return n
 	}
 	// default
@@ -245,21 +247,21 @@ func (x *TopologyLink) GetEndPointBMultiHomingName() string {
 }
 
 func (x *TopologyLink) GetLag() bool {
-	if _, ok := x.GetTags()[LinkLag]; ok {
-		return x.GetTags()[LinkLag] == "true" 
+	if _, ok := x.GetTags()[keyLinkLag]; ok {
+		return x.GetTags()[keyLinkLag] == "true"
 	}
 	return false
 }
 
 func (x *TopologyLink) GetLagAName() string {
-	if n, ok := x.GetEndpointATag()[LinkEPLagName]; ok {
+	if n, ok := x.GetEndpointATag()[keyLinkEPLagName]; ok {
 		return n
 	}
 	return ""
 }
 
 func (x *TopologyLink) GetLagBName() string {
-	if n, ok := x.GetEndpointBTag()[LinkEPLagName]; ok {
+	if n, ok := x.GetEndpointBTag()[keyLinkEPLagName]; ok {
 		return n
 	}
 	return ""
@@ -360,4 +362,29 @@ func (x *TopologyLink) GetNodeEndpoints() []*NddrTopologyTopologyLinkStateNode {
 		return x.Status.TopoTopologyLink.State.Node
 	}
 	return make([]*NddrTopologyTopologyLinkStateNode, 0)
+}
+
+func (x *TopologyLink) SetKind(s string) {
+	for _, tag := range x.Status.TopoTopologyLink.State.Tag {
+		if *tag.Key == keyLinkKind {
+			tag.Value = &s
+			return
+		}
+	}
+	x.Status.TopoTopologyLink.State.Tag = append(x.Status.TopoTopologyLink.State.Tag, &NddrTopologyTopologyLinkStateTag{
+		Key:   utils.StringPtr(keyLinkKind),
+		Value: &s,
+	})
+}
+
+func (x *TopologyLink) GetKind() string {
+	if x.Status.TopoTopologyLink != nil && x.Status.TopoTopologyLink.State != nil && x.Status.TopoTopologyLink.State.Tag != nil {
+		for _, tag := range x.Status.TopoTopologyLink.State.Tag {
+			if *tag.Key == keyLinkKind {
+				return *tag.Value
+			}
+		}
+
+	}
+	return LinkEPKindUnknown.String()
 }

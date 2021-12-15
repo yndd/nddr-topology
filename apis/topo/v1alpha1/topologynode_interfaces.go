@@ -26,13 +26,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
-	MaxUint32 = ^uint32(0)
-	MinUint32 = 0
-	MaxInt    = int(MaxUint32 >> 1)
-	MinInt    = -MaxInt - 1
-)
-
 var _ TnList = &TopologyNodeList{}
 
 // +k8s:deepcopy-gen=false
@@ -135,14 +128,14 @@ func (x *TopologyNode) GetStateTags() map[string]string {
 }
 
 func (x *TopologyNode) GetPlatform() string {
-	if t, ok := x.GetStateTags()[NodePlatform]; ok {
+	if t, ok := x.GetStateTags()[keyNodePlatform]; ok {
 		return t
 	}
 	return ""
 }
 
 func (x *TopologyNode) GetNodeIndex() uint32 {
-	if t, ok := x.GetTags()[NodeIndex]; ok {
+	if t, ok := x.GetTags()[keyNodeIndex]; ok {
 		if i, err := strconv.Atoi(t); err == nil {
 			return uint32(i)
 		}
@@ -194,16 +187,15 @@ func (x *TopologyNode) SetReason(s string) {
 
 func (x *TopologyNode) SetPlatform(s string) {
 	for _, tag := range x.Status.TopoTopologyNode.State.Tag {
-		if *tag.Key == NodePlatform {
+		if *tag.Key == keyNodePlatform {
 			tag.Value = &s
 			return
 		}
 	}
 	x.Status.TopoTopologyNode.State.Tag = append(x.Status.TopoTopologyNode.State.Tag, &NddrTopologyTopologyNodeStateTag{
-		Key:   utils.StringPtr(NodePlatform),
+		Key:   utils.StringPtr(keyNodePlatform),
 		Value: &s,
 	})
-
 }
 
 func (x *TopologyNode) SetNodeEndpoint(ep *NddrTopologyTopologyLinkStateNodeEndpoint) {

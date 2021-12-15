@@ -17,16 +17,48 @@ limitations under the License.
 package v1alpha1
 
 const (
-	NodePlatform = "platform" // ixdd2, sr1, sr1s
-	NodePosition = "position"
-	NodeIndex    = "index" // index for determinsitic allocations
-	LinkLag      = "lag"   // true or false (default)
-	LinkEPKind   = "kind"  // "infra" (default), "loop", "access", "oob"
-	//LinkEPSRIOV   = "sriov"   // "true", "false" (default)
-	//LinkEPIPVLAN   = "ipvlan"   // "true", "false" (default)
-	LinkEPGroup   = "endpoint-group" //  server-pod1, dcgw1 -> default("")
-	LinkEPLagName = "lag-name"       // flexible string
-	LinkEPMultiHoming     = "multihoming"         // true or false (default)
-	LinkEPMultiHomingName = "multihoming-name"    // flexible string (group)
-	//LinkEPBreakout        = "breakout"            // -> to be discussed (true, false;) -> with a real interface CR (single ended)
+	MaxUint32 = ^uint32(0)
+	MinUint32 = 0
+	MaxInt    = int(MaxUint32 >> 1)
+	MinInt    = -MaxInt - 1
 )
+
+const (
+	keyNodePlatform = "platform" // ixdd2, sr1, sr1s
+	keyNodePosition = "position"
+	keyNodeIndex    = "index" // index for determinsitic allocations
+	keyLinkLag      = "lag"   // true or false (default)
+	keyLinkKind     = "kind"  // "infra" (default), "loop" -> used when both sides of the link are the same
+	keyLinkEPKind   = "kind"  // "infra" (default), "loop", "access", "oob"
+	//keyLinkEPSRIOV   = "sriov"   // "true", "false" (default)
+	//keyLinkEPIPVLAN   = "ipvlan"   // "true", "false" (default)
+	keyLinkEPGroup           = "endpoint-group"   //  server-pod1, dcgw1 -> default("")
+	keyLinkEPLagName         = "lag-name"         // flexible string
+	keyLinkEPMultiHoming     = "multihoming"      // true or false (default)
+	keyLinkEPMultiHomingName = "multihoming-name" // flexible string (group)
+	//keyLinkEPBreakout        = "breakout"            // -> to be discussed (true, false;) -> with a real interface CR (single ended)
+)
+
+type LinkEPKind string
+
+const (
+	LinkEPKindInfra   LinkEPKind = "infra"
+	LinkEPKindLoop    LinkEPKind = "loop"
+	LinkEPKindAccess  LinkEPKind = "access"
+	LinkEPKindOob     LinkEPKind = "oob"
+	LinkEPKindUnknown LinkEPKind = "unknown"
+)
+
+func (s LinkEPKind) String() string {
+	switch s {
+	case LinkEPKindInfra:
+		return "infra"
+	case LinkEPKindLoop:
+		return "loop"
+	case LinkEPKindAccess:
+		return "access"
+	case LinkEPKindOob:
+		return "oob"
+	}
+	return "unknown"
+}
