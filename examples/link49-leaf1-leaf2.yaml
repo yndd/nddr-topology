@@ -7,16 +7,15 @@ spec:
   topology-name: topo-test
   link:
     tag:
-    - key: lag
-      value: "true"
+    - {key: lag, value: "true"}
     endpoints:
     - node-name: leaf1
       interface-name: int-1/1/49
       tag:
-      - key: lag-name
-        value: lag-50
+      - {key: kind, value: infra}
+      - {key: lag-name, value: lag-50}
     - node-name: leaf2
       interface-name: int-1/1/49
       tag:
-      - key: lag-name
-        value: lag-50
+      - {key: kind, value: infra}
+      - {key: lag-name, value: lag-50}

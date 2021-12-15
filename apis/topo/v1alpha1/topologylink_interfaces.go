@@ -61,6 +61,14 @@ type Tl interface {
 	GetEndpointBInterfaceName() string
 	GetEndpointATag() map[string]string
 	GetEndpointBTag() map[string]string
+	GetEndPointAKind() string
+	GetEndPointBKind() string
+	GetEndPointAGroup() string
+	GetEndPointBGroup() string
+	GetEndPointAMultiHoming() bool
+	GetEndPointBMultiHoming() bool
+	GetEndPointAMultiHomingName() string
+	GetEndPointBMultiHomingName() string
 	GetLag() bool
 	GetLagAName() string
 	GetLagBName() string
@@ -129,11 +137,25 @@ func (x *TopologyLink) GetEndpointANodeName() string {
 	return *x.Spec.TopoTopologyLink.Endpoints[0].NodeName
 }
 
+func (x *TopologyLink) GetEndpointBNodeName() string {
+	if reflect.ValueOf(x.Spec.TopoTopologyLink.Endpoints).IsZero() {
+		return ""
+	}
+	return *x.Spec.TopoTopologyLink.Endpoints[1].NodeName
+}
+
 func (x *TopologyLink) GetEndpointAInterfaceName() string {
 	if reflect.ValueOf(x.Spec.TopoTopologyLink.Endpoints).IsZero() {
 		return ""
 	}
 	return *x.Spec.TopoTopologyLink.Endpoints[0].InterfaceName
+}
+
+func (x *TopologyLink) GetEndpointBInterfaceName() string {
+	if reflect.ValueOf(x.Spec.TopoTopologyLink.Endpoints).IsZero() {
+		return ""
+	}
+	return *x.Spec.TopoTopologyLink.Endpoints[1].InterfaceName
 }
 
 func (x *TopologyLink) GetEndpointATag() map[string]string {
@@ -147,20 +169,6 @@ func (x *TopologyLink) GetEndpointATag() map[string]string {
 	return s
 }
 
-func (x *TopologyLink) GetEndpointBNodeName() string {
-	if reflect.ValueOf(x.Spec.TopoTopologyLink.Endpoints).IsZero() {
-		return ""
-	}
-	return *x.Spec.TopoTopologyLink.Endpoints[1].NodeName
-}
-
-func (x *TopologyLink) GetEndpointBInterfaceName() string {
-	if reflect.ValueOf(x.Spec.TopoTopologyLink.Endpoints).IsZero() {
-		return ""
-	}
-	return *x.Spec.TopoTopologyLink.Endpoints[1].InterfaceName
-}
-
 func (x *TopologyLink) GetEndpointBTag() map[string]string {
 	s := make(map[string]string)
 	if reflect.ValueOf(x.Spec.TopoTopologyLink.Endpoints).IsZero() {
@@ -172,9 +180,73 @@ func (x *TopologyLink) GetEndpointBTag() map[string]string {
 	return s
 }
 
+func (x *TopologyLink) GetEndPointAKind() string {
+	if n, ok := x.GetEndpointATag()[LinkEPKind]; ok {
+		return n
+	}
+	// default
+	return "infra"
+}
+
+func (x *TopologyLink) GetEndPointBKind() string {
+	if n, ok := x.GetEndpointBTag()[LinkEPKind]; ok {
+		return n
+	}
+	// default
+	return "infra"
+}
+
+func (x *TopologyLink) GetEndPointAGroup() string {
+	if n, ok := x.GetEndpointATag()[LinkEPGroup]; ok {
+		return n
+	}
+	// default
+	return ""
+}
+
+func (x *TopologyLink) GetEndPointBGroup() string {
+	if n, ok := x.GetEndpointBTag()[LinkEPGroup]; ok {
+		return n
+	}
+	// default
+	return ""
+}
+
+func (x *TopologyLink) GetEndPointAMultiHoming() bool {
+	if _, ok := x.GetEndpointATag()[LinkEPMultiHoming]; ok {
+		return x.GetTags()[LinkEPMultiHoming] == "true" 
+	}
+	// default
+	return false
+}
+
+func (x *TopologyLink) GetEndPointBMultiHoming() bool {
+	if _, ok := x.GetEndpointBTag()[LinkEPMultiHoming]; ok {
+		return x.GetTags()[LinkEPMultiHoming] == "true" 
+	}
+	// default
+	return false
+}
+
+func (x *TopologyLink) GetEndPointAMultiHomingName() string {
+	if n, ok := x.GetEndpointATag()[LinkEPMultiHoming]; ok {
+		return n
+	}
+	// default
+	return ""
+}
+
+func (x *TopologyLink) GetEndPointBMultiHomingName() string {
+	if n, ok := x.GetEndpointBTag()[LinkEPMultiHoming]; ok {
+		return n
+	}
+	// default
+	return ""
+}
+
 func (x *TopologyLink) GetLag() bool {
 	if _, ok := x.GetTags()[LinkLag]; ok {
-		return true
+		return x.GetTags()[LinkLag] == "true" 
 	}
 	return false
 }

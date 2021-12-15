@@ -21,10 +21,12 @@ const (
 	NodePosition = "position"
 	NodeIndex    = "index" // index for determinsitic allocations
 	LinkLag      = "lag"   // true or false (default)
-	LinkEPKind   = "kind"  // network(default), access(server, security, dcgw), loop
-	//LinkEPGroup           = "endpoint-group"      // pod1, dcgw1
-	LinkEPLagName = "lag-name" // flexible string
-	//LinkEPMultiHoming     = "multihoming"         // true or false (default)
-	//LinkEPMultiHomingName = "multihoming-name"    // flexible string
-	//LinkEPBreakout        = "breakout"            // -> to be discussed
+	LinkEPKind   = "kind"  // "infra" (default), "loop", "access", "oob"
+	//LinkEPSRIOV   = "sriov"   // "true", "false" (default)
+	//LinkEPIPVLAN   = "ipvlan"   // "true", "false" (default)
+	LinkEPGroup   = "endpoint-group" //  server-pod1, dcgw1 -> default("")
+	LinkEPLagName = "lag-name"       // flexible string
+	LinkEPMultiHoming     = "multihoming"         // true or false (default)
+	LinkEPMultiHomingName = "multihoming-name"    // flexible string (group)
+	//LinkEPBreakout        = "breakout"            // -> to be discussed (true, false;) -> with a real interface CR (single ended)
 )
