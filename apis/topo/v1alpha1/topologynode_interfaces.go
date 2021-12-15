@@ -62,7 +62,7 @@ type Tn interface {
 	SetReason(string)
 	SetPlatform(string)
 	SetNodeEndpoint(ep *NddrTopologyTopologyLinkStateNodeEndpoint)
-	GetEndpoints() []*NddrTopologyTopologyNodeStateEndpoint
+	GetNodeEndpoints() []*NddrTopologyTopologyNodeStateEndpoint
 }
 
 // GetCondition of this Network Node.
@@ -211,7 +211,7 @@ func (x *TopologyNode) SetNodeEndpoint(ep *NddrTopologyTopologyLinkStateNodeEndp
 		})
 }
 
-func (x *TopologyNode) GetEndpoints() []*NddrTopologyTopologyNodeStateEndpoint {
+func (x *TopologyNode) GetNodeEndpoints() []*NddrTopologyTopologyNodeStateEndpoint {
 	if x.Status.TopoTopologyNode != nil && x.Status.TopoTopologyNode.State != nil && x.Status.TopoTopologyNode.State.Endpoint != nil {
 		return x.Status.TopoTopologyNode.State.Endpoint
 	}
