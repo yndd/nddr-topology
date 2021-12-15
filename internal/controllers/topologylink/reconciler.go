@@ -294,25 +294,25 @@ func (r *Reconciler) parseLink(ctx context.Context, cr topov1alpha1.Tl) error {
 		lagNameA := cr.GetLagAName()
 		lagNameB := cr.GetLagBName()
 
-		cr.SetEndpoint(nodeA.GetName(), &topov1alpha1.NddrTopologyTopologyLinkStateNodeEndpoint{
+		cr.SetNodeEndpoint(nodeA.GetName(), &topov1alpha1.NddrTopologyTopologyLinkStateNodeEndpoint{
 			Name:       utils.StringPtr(lagNameA),
 			Lag:        utils.BoolPtr(true),
 			LagSubLink: utils.BoolPtr(false),
 		})
 
-		cr.SetEndpoint(nodeB.GetName(), &topov1alpha1.NddrTopologyTopologyLinkStateNodeEndpoint{
+		cr.SetNodeEndpoint(nodeB.GetName(), &topov1alpha1.NddrTopologyTopologyLinkStateNodeEndpoint{
 			Name:       utils.StringPtr(lagNameB),
 			Lag:        utils.BoolPtr(true),
 			LagSubLink: utils.BoolPtr(false),
 		})
 
-		cr.SetEndpoint(nodeA.GetName(), &topov1alpha1.NddrTopologyTopologyLinkStateNodeEndpoint{
+		cr.SetNodeEndpoint(nodeA.GetName(), &topov1alpha1.NddrTopologyTopologyLinkStateNodeEndpoint{
 			Name:       utils.StringPtr(interfaceNameA),
 			Lag:        utils.BoolPtr(false),
 			LagSubLink: utils.BoolPtr(true),
 		})
 
-		cr.SetEndpoint(nodeB.GetName(), &topov1alpha1.NddrTopologyTopologyLinkStateNodeEndpoint{
+		cr.SetNodeEndpoint(nodeB.GetName(), &topov1alpha1.NddrTopologyTopologyLinkStateNodeEndpoint{
 			Name:       utils.StringPtr(interfaceNameB),
 			Lag:        utils.BoolPtr(false),
 			LagSubLink: utils.BoolPtr(true),
@@ -321,13 +321,13 @@ func (r *Reconciler) parseLink(ctx context.Context, cr topov1alpha1.Tl) error {
 		return nil
 	}
 
-	cr.SetEndpoint(nodeA.GetName(), &topov1alpha1.NddrTopologyTopologyLinkStateNodeEndpoint{
+	cr.SetNodeEndpoint(nodeA.GetName(), &topov1alpha1.NddrTopologyTopologyLinkStateNodeEndpoint{
 		Name:       utils.StringPtr(interfaceNameA),
 		Lag:        utils.BoolPtr(false),
 		LagSubLink: utils.BoolPtr(false),
 	})
 
-	cr.SetEndpoint(nodeB.GetName(), &topov1alpha1.NddrTopologyTopologyLinkStateNodeEndpoint{
+	cr.SetNodeEndpoint(nodeB.GetName(), &topov1alpha1.NddrTopologyTopologyLinkStateNodeEndpoint{
 		Name:       utils.StringPtr(interfaceNameB),
 		Lag:        utils.BoolPtr(false),
 		LagSubLink: utils.BoolPtr(false),

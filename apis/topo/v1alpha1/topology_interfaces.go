@@ -22,7 +22,26 @@ import (
 	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
 	"github.com/yndd/ndd-runtime/pkg/resource"
 	"github.com/yndd/ndd-runtime/pkg/utils"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+var _ TpList = &TopologyList{}
+
+// +k8s:deepcopy-gen=false
+type TpList interface {
+	client.ObjectList
+
+	GetTopologies() []Tp
+}
+
+func (x *TopologyList) GetTopologies() []Tp {
+	xs := make([]Tp, len(x.Items))
+	for i, r := range x.Items {
+		r := r // Pin range variable so we can take its address.
+		xs[i] = &r
+	}
+	return xs
+}
 
 var _ Tp = &Topology{}
 

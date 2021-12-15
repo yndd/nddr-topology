@@ -22,7 +22,26 @@ import (
 	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
 	"github.com/yndd/ndd-runtime/pkg/resource"
 	"github.com/yndd/ndd-runtime/pkg/utils"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+var _ TnList = &TopologyNodeList{}
+
+// +k8s:deepcopy-gen=false
+type TnList interface {
+	client.ObjectList
+
+	GetNodes() []Tn
+}
+
+func (x *TopologyNodeList) GetNodes() []Tn {
+	xs := make([]Tn, len(x.Items))
+	for i, r := range x.Items {
+		r := r // Pin range variable so we can take its address.
+		xs[i] = &r
+	}
+	return xs
+}
 
 var _ Tn = &TopologyNode{}
 
@@ -42,7 +61,8 @@ type Tn interface {
 	SetStatus(string)
 	SetReason(string)
 	SetPlatform(string)
-	SetEndpoint(ep *NddrTopologyTopologyLinkStateNodeEndpoint)
+	SetNodeEndpoint(ep *NddrTopologyTopologyLinkStateNodeEndpoint)
+	GetEndpoints() []*NddrTopologyTopologyNodeStateEndpoint
 }
 
 // GetCondition of this Network Node.
@@ -167,7 +187,7 @@ func (x *TopologyNode) SetPlatform(s string) {
 
 }
 
-func (x *TopologyNode) SetEndpoint(ep *NddrTopologyTopologyLinkStateNodeEndpoint) {
+func (x *TopologyNode) SetNodeEndpoint(ep *NddrTopologyTopologyLinkStateNodeEndpoint) {
 	if x.Status.TopoTopologyNode.State.Endpoint == nil {
 		x.Status.TopoTopologyNode.State.Endpoint = make([]*NddrTopologyTopologyNodeStateEndpoint, 0)
 	}
@@ -189,4 +209,11 @@ func (x *TopologyNode) SetEndpoint(ep *NddrTopologyTopologyLinkStateNodeEndpoint
 			Lag:        ep.Lag,
 			LagSubLink: ep.LagSubLink,
 		})
+}
+
+func (x *TopologyNode) GetEndpoints() []*NddrTopologyTopologyNodeStateEndpoint {
+	if x.Status.TopoTopologyNode != nil && x.Status.TopoTopologyNode.State != nil && x.Status.TopoTopologyNode.State.Endpoint != nil {
+		return x.Status.TopoTopologyNode.State.Endpoint
+	}
+	return make([]*NddrTopologyTopologyNodeStateEndpoint, 0)
 }

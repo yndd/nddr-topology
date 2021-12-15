@@ -305,7 +305,7 @@ func (r *Reconciler) parseNode(ctx context.Context, cr topov1alpha1.Tn) error {
 				for _, n := range topolink.GetNodes() {
 					if *n.Name == cr.GetName() {
 						for _, ep := range n.Endpoint {
-							cr.SetEndpoint(ep)
+							cr.SetNodeEndpoint(ep)
 						}
 					}
 				}

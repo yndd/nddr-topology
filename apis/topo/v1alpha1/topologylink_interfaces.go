@@ -22,7 +22,26 @@ import (
 	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
 	"github.com/yndd/ndd-runtime/pkg/resource"
 	"github.com/yndd/ndd-runtime/pkg/utils"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+var _ TlList = &TopologyLinkList{}
+
+// +k8s:deepcopy-gen=false
+type TlList interface {
+	client.ObjectList
+
+	GetLinks() []Tl
+}
+
+func (x *TopologyLinkList) GetLinks() []Tl {
+	xs := make([]Tl, len(x.Items))
+	for i, r := range x.Items {
+		r := r // Pin range variable so we can take its address.
+		xs[i] = &r
+	}
+	return xs
+}
 
 var _ Tl = &TopologyLink{}
 
@@ -50,7 +69,8 @@ type Tl interface {
 	InitializeResource() error
 	SetStatus(string)
 	SetReason(string)
-	SetEndpoint(nodeName string, ep *NddrTopologyTopologyLinkStateNodeEndpoint)
+	SetNodeEndpoint(nodeName string, ep *NddrTopologyTopologyLinkStateNodeEndpoint)
+	GetNodeEndpoints() []*NddrTopologyTopologyLinkStateNode
 }
 
 // GetCondition of this Network Node.
@@ -239,7 +259,7 @@ func (x *TopologyLink) SetReason(s string) {
 	x.Status.TopoTopologyLink.State.Reason = &s
 }
 
-func (x *TopologyLink) SetEndpoint(nodeName string, ep *NddrTopologyTopologyLinkStateNodeEndpoint) {
+func (x *TopologyLink) SetNodeEndpoint(nodeName string, ep *NddrTopologyTopologyLinkStateNodeEndpoint) {
 	for _, node := range x.Status.TopoTopologyLink.State.Node {
 		if *node.Name == nodeName {
 			for _, nodeep := range node.Endpoint {
@@ -261,4 +281,11 @@ func (x *TopologyLink) SetEndpoint(nodeName string, ep *NddrTopologyTopologyLink
 			ep,
 		},
 	})
+}
+
+func (x *TopologyLink) GetNodeEndpoints() []*NddrTopologyTopologyLinkStateNode {
+	if x.Status.TopoTopologyLink != nil && x.Status.TopoTopologyLink.State != nil && x.Status.TopoTopologyLink.State.Node != nil {
+		return x.Status.TopoTopologyLink.State.Node
+	}
+	return make([]*NddrTopologyTopologyLinkStateNode, 0)
 }
