@@ -24,18 +24,20 @@ const (
 )
 
 const (
-	keyNodePlatform = "platform" // ixdd2, sr1, sr1s
-	keyNodePosition = "position"
-	keyNodeIndex    = "index" // index for determinsitic allocations
-	keyLinkLag      = "lag"   // true or false (default)
-	keyLinkKind     = "kind"  // "infra" (default), "loop" -> used when both sides of the link are the same
-	keyLinkEPKind   = "kind"  // "infra" (default), "loop", "access", "oob"
+	KeyNode         = "node"     // used in allocation e.g. aspool
+	KeyNodePlatform = "platform" // ixdd2, sr1, sr1s
+	KeyNodePosition = "position"
+	KeyNodeIndex    = "index" // index for determinsitic allocations
+	KeyLink         = "link"  // used in allocation
+	KeyLinkLag      = "lag"   // true or false (default)
+	KeyLinkKind     = "kind"  // "infra" (default), "loop" -> used when both sides of the link are the same
+	KeyLinkEPKind   = "kind"  // "infra" (default), "loop", "access", "oob"
 	//keyLinkEPSRIOV   = "sriov"   // "true", "false" (default)
 	//keyLinkEPIPVLAN   = "ipvlan"   // "true", "false" (default)
-	keyLinkEPGroup           = "endpoint-group"   //  server-pod1, dcgw1 -> default("")
-	keyLinkEPLagName         = "lag-name"         // flexible string
-	keyLinkEPMultiHoming     = "multihoming"      // true or false (default)
-	keyLinkEPMultiHomingName = "multihoming-name" // flexible string (group)
+	KeyLinkEPGroup           = "endpoint-group"   //  server-pod1, dcgw1 -> default("")
+	KeyLinkEPLagName         = "lag-name"         // flexible string
+	KeyLinkEPMultiHoming     = "multihoming"      // true or false (default)
+	KeyLinkEPMultiHomingName = "multihoming-name" // flexible string (group)
 	//keyLinkEPBreakout        = "breakout"            // -> to be discussed (true, false;) -> with a real interface CR (single ended)
 )
 

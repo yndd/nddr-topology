@@ -183,7 +183,7 @@ func (x *TopologyLink) GetEndpointBTag() map[string]string {
 }
 
 func (x *TopologyLink) GetEndPointAKind() string {
-	if n, ok := x.GetEndpointATag()[keyLinkEPKind]; ok {
+	if n, ok := x.GetEndpointATag()[KeyLinkEPKind]; ok {
 		return n
 	}
 	// default
@@ -191,7 +191,7 @@ func (x *TopologyLink) GetEndPointAKind() string {
 }
 
 func (x *TopologyLink) GetEndPointBKind() string {
-	if n, ok := x.GetEndpointBTag()[keyLinkEPKind]; ok {
+	if n, ok := x.GetEndpointBTag()[KeyLinkEPKind]; ok {
 		return n
 	}
 	// default
@@ -199,7 +199,7 @@ func (x *TopologyLink) GetEndPointBKind() string {
 }
 
 func (x *TopologyLink) GetEndPointAGroup() string {
-	if n, ok := x.GetEndpointATag()[keyLinkEPGroup]; ok {
+	if n, ok := x.GetEndpointATag()[KeyLinkEPGroup]; ok {
 		return n
 	}
 	// default
@@ -207,7 +207,7 @@ func (x *TopologyLink) GetEndPointAGroup() string {
 }
 
 func (x *TopologyLink) GetEndPointBGroup() string {
-	if n, ok := x.GetEndpointBTag()[keyLinkEPGroup]; ok {
+	if n, ok := x.GetEndpointBTag()[KeyLinkEPGroup]; ok {
 		return n
 	}
 	// default
@@ -215,23 +215,23 @@ func (x *TopologyLink) GetEndPointBGroup() string {
 }
 
 func (x *TopologyLink) GetEndPointAMultiHoming() bool {
-	if _, ok := x.GetEndpointATag()[keyLinkEPMultiHoming]; ok {
-		return x.GetTags()[keyLinkEPMultiHoming] == "true"
+	if _, ok := x.GetEndpointATag()[KeyLinkEPMultiHoming]; ok {
+		return x.GetTags()[KeyLinkEPMultiHoming] == "true"
 	}
 	// default
 	return false
 }
 
 func (x *TopologyLink) GetEndPointBMultiHoming() bool {
-	if _, ok := x.GetEndpointBTag()[keyLinkEPMultiHoming]; ok {
-		return x.GetTags()[keyLinkEPMultiHoming] == "true"
+	if _, ok := x.GetEndpointBTag()[KeyLinkEPMultiHoming]; ok {
+		return x.GetTags()[KeyLinkEPMultiHoming] == "true"
 	}
 	// default
 	return false
 }
 
 func (x *TopologyLink) GetEndPointAMultiHomingName() string {
-	if n, ok := x.GetEndpointATag()[keyLinkEPMultiHoming]; ok {
+	if n, ok := x.GetEndpointATag()[KeyLinkEPMultiHoming]; ok {
 		return n
 	}
 	// default
@@ -239,7 +239,7 @@ func (x *TopologyLink) GetEndPointAMultiHomingName() string {
 }
 
 func (x *TopologyLink) GetEndPointBMultiHomingName() string {
-	if n, ok := x.GetEndpointBTag()[keyLinkEPMultiHoming]; ok {
+	if n, ok := x.GetEndpointBTag()[KeyLinkEPMultiHoming]; ok {
 		return n
 	}
 	// default
@@ -247,21 +247,21 @@ func (x *TopologyLink) GetEndPointBMultiHomingName() string {
 }
 
 func (x *TopologyLink) GetLag() bool {
-	if _, ok := x.GetTags()[keyLinkLag]; ok {
-		return x.GetTags()[keyLinkLag] == "true"
+	if _, ok := x.GetTags()[KeyLinkLag]; ok {
+		return x.GetTags()[KeyLinkLag] == "true"
 	}
 	return false
 }
 
 func (x *TopologyLink) GetLagAName() string {
-	if n, ok := x.GetEndpointATag()[keyLinkEPLagName]; ok {
+	if n, ok := x.GetEndpointATag()[KeyLinkEPLagName]; ok {
 		return n
 	}
 	return ""
 }
 
 func (x *TopologyLink) GetLagBName() string {
-	if n, ok := x.GetEndpointBTag()[keyLinkEPLagName]; ok {
+	if n, ok := x.GetEndpointBTag()[KeyLinkEPLagName]; ok {
 		return n
 	}
 	return ""
@@ -366,13 +366,13 @@ func (x *TopologyLink) GetNodeEndpoints() []*NddrTopologyTopologyLinkStateNode {
 
 func (x *TopologyLink) SetKind(s string) {
 	for _, tag := range x.Status.TopoTopologyLink.State.Tag {
-		if *tag.Key == keyLinkKind {
+		if *tag.Key == KeyLinkKind {
 			tag.Value = &s
 			return
 		}
 	}
 	x.Status.TopoTopologyLink.State.Tag = append(x.Status.TopoTopologyLink.State.Tag, &NddrTopologyTopologyLinkStateTag{
-		Key:   utils.StringPtr(keyLinkKind),
+		Key:   utils.StringPtr(KeyLinkKind),
 		Value: &s,
 	})
 }
@@ -380,7 +380,7 @@ func (x *TopologyLink) SetKind(s string) {
 func (x *TopologyLink) GetKind() string {
 	if x.Status.TopoTopologyLink != nil && x.Status.TopoTopologyLink.State != nil && x.Status.TopoTopologyLink.State.Tag != nil {
 		for _, tag := range x.Status.TopoTopologyLink.State.Tag {
-			if *tag.Key == keyLinkKind {
+			if *tag.Key == KeyLinkKind {
 				return *tag.Value
 			}
 		}

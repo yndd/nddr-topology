@@ -128,14 +128,14 @@ func (x *TopologyNode) GetStateTags() map[string]string {
 }
 
 func (x *TopologyNode) GetPlatform() string {
-	if t, ok := x.GetStateTags()[keyNodePlatform]; ok {
+	if t, ok := x.GetStateTags()[KeyNodePlatform]; ok {
 		return t
 	}
 	return ""
 }
 
 func (x *TopologyNode) GetNodeIndex() uint32 {
-	if t, ok := x.GetTags()[keyNodeIndex]; ok {
+	if t, ok := x.GetTags()[KeyNodeIndex]; ok {
 		if i, err := strconv.Atoi(t); err == nil {
 			return uint32(i)
 		}
@@ -187,13 +187,13 @@ func (x *TopologyNode) SetReason(s string) {
 
 func (x *TopologyNode) SetPlatform(s string) {
 	for _, tag := range x.Status.TopoTopologyNode.State.Tag {
-		if *tag.Key == keyNodePlatform {
+		if *tag.Key == KeyNodePlatform {
 			tag.Value = &s
 			return
 		}
 	}
 	x.Status.TopoTopologyNode.State.Tag = append(x.Status.TopoTopologyNode.State.Tag, &NddrTopologyTopologyNodeStateTag{
-		Key:   utils.StringPtr(keyNodePlatform),
+		Key:   utils.StringPtr(KeyNodePlatform),
 		Value: &s,
 	})
 }
