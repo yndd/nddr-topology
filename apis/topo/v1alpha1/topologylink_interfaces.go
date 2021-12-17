@@ -73,6 +73,9 @@ type Tl interface {
 	GetEndPointBMultiHomingName() string
 	GetLagMember() bool
 	GetLag() bool
+	GetLacp() bool
+	GetLacpFallbackA() bool
+	GetLacpFallbackB() bool
 	GetLagAName() string
 	GetLagBName() string
 	GetStatus() string
@@ -271,6 +274,22 @@ func (x *TopologyLink) GetEndPointBMultiHomingName() string {
 	}
 	// default
 	return ""
+}
+
+func (x *TopologyLink) GetLacpFallbackA() bool {
+	if _, ok := x.GetEndpointATag()[KeyLinkEPLacpFallback]; ok {
+		return x.GetTags()[KeyLinkEPLacpFallback] == "true"
+	}
+	// default
+	return false
+}
+
+func (x *TopologyLink) GetLacpFallbackB() bool {
+	if _, ok := x.GetEndpointBTag()[KeyLinkEPLacpFallback]; ok {
+		return x.GetTags()[KeyLinkEPLacpFallback] == "true"
+	}
+	// default
+	return false
 }
 
 func (x *TopologyLink) GetLagMember() bool {

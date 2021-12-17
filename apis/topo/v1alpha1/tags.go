@@ -24,17 +24,18 @@ const (
 )
 
 const (
-	KeyPurpose       = "purpose"  // used in ipam for loopback, isl
-	KeyNode          = "node"     // used in allocation e.g. aspool
-	KeyNodePlatform  = "platform" // ixdd2, sr1, sr1s
-	KeyNodePosition  = "position"
-	KeyNodeIndex     = "index"      // index for determinsitic allocations
-	KeyLink          = "link"       // used in allocation
-	KeyLinkLagMember = "lag-member" // true or false (default) -> this is set in the config
-	KeyLinkLag       = "lag"        // true or false (default) -> this is set on the logical link which is created by the topolink parser
-	KeyLinkLacp      = "lacp"       // true (default) or false 
-	KeyLinkKind      = "kind"       // "infra" (default), "loop" -> used when both sides of the link are the same
-	KeyLinkEPKind    = "kind"       // "infra" (default), "loop", "access", "oob"
+	KeyPurpose            = "purpose"  // used in ipam for loopback, isl
+	KeyNode               = "node"     // used in allocation e.g. aspool
+	KeyNodePlatform       = "platform" // ixdd2, sr1, sr1s
+	KeyNodePosition       = "position"
+	KeyNodeIndex          = "index"      // index for determinsitic allocations
+	KeyLink               = "link"       // used in allocation
+	KeyLinkLagMember      = "lag-member" // true or false (default) -> this is set in the config
+	KeyLinkLag            = "lag"        // true or false (default) -> this is set on the logical link which is created by the topolink parser
+	KeyLinkLacp           = "lacp"       // true (default) or false
+	KeyLinkKind           = "kind"       // "infra" (default), "loop" -> used when both sides of the link are the same
+	KeyLinkEPKind         = "kind"       // "infra" (default), "loop", "access", "oob"
+	KeyLinkEPLacpFallback = "lacp-fallback"  // true or false (default)
 	//keyLinkEPSRIOV   = "sriov"   // "true", "false" (default)
 	//keyLinkEPIPVLAN   = "ipvlan"   // "true", "false" (default)
 	KeyLinkEPGroup           = "endpoint-group"   //  server-pod1, dcgw1 -> default("")
