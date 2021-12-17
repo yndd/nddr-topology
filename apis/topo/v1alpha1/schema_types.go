@@ -95,9 +95,9 @@ type NddrTopologyTopologyLinkStateNode struct {
 
 // NddrTopologyTopologyLinkStateNodeEndpoint struct
 type NddrTopologyTopologyLinkStateNodeEndpoint struct {
-	Lag        *bool   `json:"lag,omitempty"`
-	LagSubLink *bool   `json:"lag-sub-link,omitempty"`
-	Name       *string `json:"name,omitempty"`
+	Lag           *bool   `json:"lag,omitempty"`
+	LagMemberLink *bool   `json:"lag-member-link,omitempty"`
+	Name          *string `json:"name,omitempty"`
 }
 
 // NddrTopologyTopologyLinkStateTag struct

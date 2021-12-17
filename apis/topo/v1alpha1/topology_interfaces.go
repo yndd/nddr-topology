@@ -191,5 +191,8 @@ func (x *Topology) SetReason(s string) {
 }
 
 func (x *Topology) GetStatus() string {
-	return *x.Status.TopoTopology.State.Status
+	if x.Status.TopoTopology != nil && x.Status.TopoTopology.State != nil && x.Status.TopoTopology.State.Status != nil {
+		return *x.Status.TopoTopology.State.Status
+	}
+	return "unknown"
 }

@@ -435,8 +435,8 @@ func (in *NddrTopologyTopologyLinkStateNodeEndpoint) DeepCopyInto(out *NddrTopol
 		*out = new(bool)
 		**out = **in
 	}
-	if in.LagSubLink != nil {
-		in, out := &in.LagSubLink, &out.LagSubLink
+	if in.LagMemberLink != nil {
+		in, out := &in.LagMemberLink, &out.LagMemberLink
 		*out = new(bool)
 		**out = **in
 	}

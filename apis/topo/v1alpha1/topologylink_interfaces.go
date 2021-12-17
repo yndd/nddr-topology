@@ -61,6 +61,8 @@ type Tl interface {
 	GetEndpointBInterfaceName() string
 	GetEndpointATag() map[string]string
 	GetEndpointBTag() map[string]string
+	GetEndpointATagRaw() []*TopoTopologyLinkEndpointsTag
+	GetEndpointBTagRaw() []*TopoTopologyLinkEndpointsTag
 	GetEndPointAKind() string
 	GetEndPointBKind() string
 	GetEndPointAGroup() string
@@ -69,11 +71,13 @@ type Tl interface {
 	GetEndPointBMultiHoming() bool
 	GetEndPointAMultiHomingName() string
 	GetEndPointBMultiHomingName() string
+	GetLagMember() bool
 	GetLag() bool
 	GetLagAName() string
 	GetLagBName() string
 	GetStatus() string
 	GetNodes() []*NddrTopologyTopologyLinkStateNode
+	GetStatusTagsRaw() []*NddrTopologyTopologyLinkTag
 	InitializeResource() error
 	SetStatus(string)
 	SetReason(string)
@@ -123,6 +127,13 @@ func (x *TopologyLink) GetTags() map[string]string {
 		s[*tag.Key] = *tag.Value
 	}
 	return s
+}
+
+func (x *TopologyLink) GetStatusTagsRaw() []*NddrTopologyTopologyLinkTag {
+	if x.Status.TopoTopologyLink != nil && x.Status.TopoTopologyLink.Tag != nil {
+		return x.Status.TopoTopologyLink.Tag
+	}
+	return make([]*NddrTopologyTopologyLinkTag, 0)
 }
 
 func (x *TopologyLink) GetEndpoints() []*TopoTopologyLinkEndpoints {
@@ -180,6 +191,22 @@ func (x *TopologyLink) GetEndpointBTag() map[string]string {
 		s[*tag.Key] = *tag.Value
 	}
 	return s
+}
+
+func (x *TopologyLink) GetEndpointATagRaw() []*TopoTopologyLinkEndpointsTag {
+	s := make([]*TopoTopologyLinkEndpointsTag, 0)
+	if reflect.ValueOf(x.Spec.TopoTopologyLink.Endpoints).IsZero() {
+		return s
+	}
+	return x.Spec.TopoTopologyLink.Endpoints[0].Tag
+}
+
+func (x *TopologyLink) GetEndpointBTagRaw() []*TopoTopologyLinkEndpointsTag {
+	s := make([]*TopoTopologyLinkEndpointsTag, 0)
+	if reflect.ValueOf(x.Spec.TopoTopologyLink.Endpoints).IsZero() {
+		return s
+	}
+	return x.Spec.TopoTopologyLink.Endpoints[1].Tag
 }
 
 func (x *TopologyLink) GetEndPointAKind() string {
@@ -246,6 +273,13 @@ func (x *TopologyLink) GetEndPointBMultiHomingName() string {
 	return ""
 }
 
+func (x *TopologyLink) GetLagMember() bool {
+	if _, ok := x.GetTags()[KeyLinkLagMember]; ok {
+		return x.GetTags()[KeyLinkLagMember] == "true"
+	}
+	return false
+}
+
 func (x *TopologyLink) GetLag() bool {
 	if _, ok := x.GetTags()[KeyLinkLag]; ok {
 		return x.GetTags()[KeyLinkLag] == "true"
@@ -268,7 +302,10 @@ func (x *TopologyLink) GetLagBName() string {
 }
 
 func (x *TopologyLink) GetStatus() string {
-	return *x.Status.TopoTopologyLink.State.Status
+	if x.Status.TopoTopologyLink != nil && x.Status.TopoTopologyLink.State != nil && x.Status.TopoTopologyLink.State.Status != nil {
+		return *x.Status.TopoTopologyLink.State.Status
+	}
+	return "unknown"
 }
 
 func (x *TopologyLink) GetNodes() []*NddrTopologyTopologyLinkStateNode {
@@ -339,7 +376,7 @@ func (x *TopologyLink) SetNodeEndpoint(nodeName string, ep *NddrTopologyTopology
 			for _, nodeep := range node.Endpoint {
 				if *nodeep.Name == *ep.Name {
 					nodeep.Lag = ep.Lag
-					nodeep.LagSubLink = ep.LagSubLink
+					nodeep.LagMemberLink = ep.LagMemberLink
 					nodeep.Name = ep.Name
 					return
 				}

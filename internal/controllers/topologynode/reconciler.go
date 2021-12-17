@@ -220,8 +220,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 	}
 
 	cr.SetConditions(nddv1.ReconcileSuccess(), topov1alpha1.Ready())
-	// we don't need to requeue for topology
-	return reconcile.Result{RequeueAfter: mediumWait}, errors.Wrap(r.client.Status().Update(ctx, cr), errUpdateStatus)
+	// we don't need to requeue for topology node
+	return reconcile.Result{}, errors.Wrap(r.client.Status().Update(ctx, cr), errUpdateStatus)
 }
 
 func (r *Reconciler) handleAppLogic(ctx context.Context, cr topov1alpha1.Tn) error {
@@ -243,9 +243,11 @@ func (r *Reconciler) handleAppLogic(ctx context.Context, cr topov1alpha1.Tn) err
 		return err
 	}
 
-	if err := r.parseNode(ctx, cr); err != nil {
-		return err
-	}
+	/*
+		if err := r.parseNode(ctx, cr); err != nil {
+			return err
+		}
+	*/
 	return nil
 }
 
@@ -289,6 +291,7 @@ func (r *Reconciler) setPlatform(ctx context.Context, cr topov1alpha1.Tn, topo *
 	return nil
 }
 
+/*
 func (r *Reconciler) parseNode(ctx context.Context, cr topov1alpha1.Tn) error {
 	// list link
 	// TODO we could potentially improve the parsing based on annotations; tbd
@@ -315,3 +318,4 @@ func (r *Reconciler) parseNode(ctx context.Context, cr topov1alpha1.Tn) error {
 	return nil
 
 }
+*/

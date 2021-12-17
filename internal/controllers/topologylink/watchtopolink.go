@@ -18,6 +18,7 @@ package topologylink
 
 import (
 	"context"
+	"strings"
 
 	//ndddvrv1 "github.com/yndd/ndd-core/apis/dvr/v1"
 	"github.com/yndd/ndd-runtime/pkg/logging"
@@ -30,39 +31,43 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-type EnqueueRequestForAllTopologyNodes struct {
+type EnqueueRequestForAllTopologyLinks struct {
 	client client.Client
 	log    logging.Logger
 	ctx    context.Context
 }
 
 // Create enqueues a request for all infrastructures which pertains to the topology.
-func (e *EnqueueRequestForAllTopologyNodes) Create(evt event.CreateEvent, q workqueue.RateLimitingInterface) {
+func (e *EnqueueRequestForAllTopologyLinks) Create(evt event.CreateEvent, q workqueue.RateLimitingInterface) {
 	e.add(evt.Object, q)
 }
 
 // Create enqueues a request for all infrastructures which pertains to the topology.
-func (e *EnqueueRequestForAllTopologyNodes) Update(evt event.UpdateEvent, q workqueue.RateLimitingInterface) {
+func (e *EnqueueRequestForAllTopologyLinks) Update(evt event.UpdateEvent, q workqueue.RateLimitingInterface) {
 	e.add(evt.ObjectOld, q)
 	e.add(evt.ObjectNew, q)
 }
 
 // Create enqueues a request for all infrastructures which pertains to the topology.
-func (e *EnqueueRequestForAllTopologyNodes) Delete(evt event.DeleteEvent, q workqueue.RateLimitingInterface) {
-	e.add(evt.Object, q)
+func (e *EnqueueRequestForAllTopologyLinks) Delete(evt event.DeleteEvent, q workqueue.RateLimitingInterface) {
+	e.delete(evt.Object, q)
 }
 
 // Create enqueues a request for all infrastructures which pertains to the topology.
-func (e *EnqueueRequestForAllTopologyNodes) Generic(evt event.GenericEvent, q workqueue.RateLimitingInterface) {
+func (e *EnqueueRequestForAllTopologyLinks) Generic(evt event.GenericEvent, q workqueue.RateLimitingInterface) {
 	e.add(evt.Object, q)
 }
 
-func (e *EnqueueRequestForAllTopologyNodes) add(obj runtime.Object, queue adder) {
-	dd, ok := obj.(*topov1alpha1.TopologyNode)
+func (e *EnqueueRequestForAllTopologyLinks) add(obj runtime.Object, queue adder) {
+	// ignore
+}
+
+func (e *EnqueueRequestForAllTopologyLinks) delete(obj runtime.Object, queue adder) {
+	dd, ok := obj.(*topov1alpha1.TopologyLink)
 	if !ok {
 		return
 	}
-	log := e.log.WithValues("function", "watch topology nodes", "name", dd.GetName())
+	log := e.log.WithValues("function", "watch deleting topology links", "name", dd.GetName())
 	log.Debug("topologylink handleEvent")
 
 	d := &topov1alpha1.TopologyLinkList{}
@@ -73,9 +78,18 @@ func (e *EnqueueRequestForAllTopologyNodes) add(obj runtime.Object, queue adder)
 	for _, topolink := range d.Items {
 		// only enqueue if the topology name match
 		if topolink.GetTopologyName() == dd.GetTopologyName() {
-			queue.Add(reconcile.Request{NamespacedName: types.NamespacedName{
-				Namespace: topolink.GetNamespace(),
-				Name:      topolink.GetName()}})
+			// if a logical link gets deleted, we need to see if there are other member links, so we reconcile
+			// all the links in the topology that are NOT logical links
+			// we get a small delete and add event of the logical link
+			log.Debug("trigger link", "name", dd.GetName())
+			if strings.Contains(dd.GetName(), "logical") {
+				log.Debug("topo link", "name", topolink.GetName())
+				if !strings.Contains(topolink.GetName(), "logical") {
+					queue.Add(reconcile.Request{NamespacedName: types.NamespacedName{
+						Namespace: topolink.GetNamespace(),
+						Name:      topolink.GetName()}})
+				}
+			}
 		}
 	}
 }

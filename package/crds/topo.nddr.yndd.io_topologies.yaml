@@ -230,7 +230,7 @@ spec:
                                       properties:
                                         lag:
                                           type: boolean
-                                        lag-sub-link:
+                                        lag-member-link:
                                           type: boolean
                                         name:
                                           type: string

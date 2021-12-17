@@ -27,7 +27,6 @@ import (
 	"github.com/yndd/ndd-runtime/pkg/logging"
 	"github.com/yndd/ndd-runtime/pkg/meta"
 	"github.com/yndd/ndd-runtime/pkg/resource"
-	"github.com/yndd/ndd-runtime/pkg/utils"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -71,6 +70,8 @@ type Reconciler struct {
 	record  event.Recorder
 	managed mrManaged
 
+	hooks Hooks
+
 	newTopologyLink func() topov1alpha1.Tl
 }
 
@@ -82,6 +83,13 @@ type mrManaged struct {
 func WithLogger(log logging.Logger) ReconcilerOption {
 	return func(r *Reconciler) {
 		r.log = log
+	}
+}
+
+// WitHooks specifies how the Reconciler should deploy child resources
+func WithHooks(h Hooks) ReconcilerOption {
+	return func(r *Reconciler) {
+		r.hooks = h
 	}
 }
 
@@ -111,6 +119,10 @@ func Setup(mgr ctrl.Manager, o controller.Options, nddcopts *shared.NddControlle
 
 	r := NewReconciler(mgr,
 		WithLogger(nddcopts.Logger.WithValues("controller", name)),
+		WithHooks(NewHook(resource.ClientApplicator{
+			Client:     mgr.GetClient(),
+			Applicator: resource.NewAPIPatchingApplicator(mgr.GetClient()),
+		}, nddcopts.Logger.WithValues("nodehook", name))),
 		WithNewReourceFn(fn),
 		WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
 	)
@@ -127,6 +139,12 @@ func Setup(mgr ctrl.Manager, o controller.Options, nddcopts *shared.NddControlle
 		ctx:    context.Background(),
 	}
 
+	topologyLinkHandler := &EnqueueRequestForAllTopologyLinks{
+		client: mgr.GetClient(),
+		log:    nddcopts.Logger,
+		ctx:    context.Background(),
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o).
@@ -134,6 +152,7 @@ func Setup(mgr ctrl.Manager, o controller.Options, nddcopts *shared.NddControlle
 		WithEventFilter(resource.IgnoreUpdateWithoutGenerationChangePredicate()).
 		Watches(&source.Kind{Type: &topov1alpha1.Topology{}}, topologyHandler).
 		Watches(&source.Kind{Type: &topov1alpha1.TopologyNode{}}, topologyNodeHandler).
+		Watches(&source.Kind{Type: &topov1alpha1.TopologyLink{}}, topologyLinkHandler).
 		Complete(r)
 }
 
@@ -265,9 +284,19 @@ func (r *Reconciler) handleStatus(ctx context.Context, cr topov1alpha1.Tl, topo 
 }
 
 func (r *Reconciler) parseLink(ctx context.Context, cr topov1alpha1.Tl) error {
+
+	if cr.GetLag() {
+		// this is a logical link
+
+		// for infra links we set the kind at the link level using the information from the spec
+		if cr.GetEndPointAKind() == topov1alpha1.LinkEPKindInfra.String() && cr.GetEndPointBKind() == topov1alpha1.LinkEPKindInfra.String() {
+			cr.SetKind(topov1alpha1.LinkEPKindInfra.String())
+		}
+		return nil
+	}
 	// parse link
 	nameNodeA := cr.GetEndpointANodeName()
-	interfaceNameA := cr.GetEndpointAInterfaceName()
+	//interfaceNameA := cr.GetEndpointAInterfaceName()
 	nodeA := &topov1alpha1.TopologyNode{}
 	if err := r.client.Get(ctx, types.NamespacedName{
 		Namespace: cr.GetNamespace(),
@@ -278,7 +307,7 @@ func (r *Reconciler) parseLink(ctx context.Context, cr topov1alpha1.Tl) error {
 		return err
 	}
 	nameNodeB := cr.GetEndpointBNodeName()
-	interfaceNameB := cr.GetEndpointBInterfaceName()
+	//interfaceNameB := cr.GetEndpointBInterfaceName()
 	nodeB := &topov1alpha1.TopologyNode{}
 	if err := r.client.Get(ctx, types.NamespacedName{
 		Namespace: cr.GetNamespace(),
@@ -295,47 +324,22 @@ func (r *Reconciler) parseLink(ctx context.Context, cr topov1alpha1.Tl) error {
 	}
 
 	// check if link is part of a lag
-	if cr.GetLag() {
-		lagNameA := cr.GetLagAName()
-		lagNameB := cr.GetLagBName()
-
-		cr.SetNodeEndpoint(nodeA.GetName(), &topov1alpha1.NddrTopologyTopologyLinkStateNodeEndpoint{
-			Name:       utils.StringPtr(lagNameA),
-			Lag:        utils.BoolPtr(true),
-			LagSubLink: utils.BoolPtr(false),
-		})
-
-		cr.SetNodeEndpoint(nodeB.GetName(), &topov1alpha1.NddrTopologyTopologyLinkStateNodeEndpoint{
-			Name:       utils.StringPtr(lagNameB),
-			Lag:        utils.BoolPtr(true),
-			LagSubLink: utils.BoolPtr(false),
-		})
-
-		cr.SetNodeEndpoint(nodeA.GetName(), &topov1alpha1.NddrTopologyTopologyLinkStateNodeEndpoint{
-			Name:       utils.StringPtr(interfaceNameA),
-			Lag:        utils.BoolPtr(false),
-			LagSubLink: utils.BoolPtr(true),
-		})
-
-		cr.SetNodeEndpoint(nodeB.GetName(), &topov1alpha1.NddrTopologyTopologyLinkStateNodeEndpoint{
-			Name:       utils.StringPtr(interfaceNameB),
-			Lag:        utils.BoolPtr(false),
-			LagSubLink: utils.BoolPtr(true),
-		})
+	if cr.GetLagMember() {
+		logicalLink, err := r.hooks.Get(ctx, cr)
+		if err != nil {
+			if strings.Contains(err.Error(), "not found") {
+				if err := r.hooks.Create(ctx, cr); err != nil {
+					r.log.Debug("logical link create")
+					return err
+				}
+				return nil
+			}
+			return err
+		}
+		r.log.Debug("logical link exists", "Logical Link", logicalLink.GetName())
+		//TODO for the multi-homed case we need to check if the tags are there
 
 		return nil
 	}
-
-	cr.SetNodeEndpoint(nodeA.GetName(), &topov1alpha1.NddrTopologyTopologyLinkStateNodeEndpoint{
-		Name:       utils.StringPtr(interfaceNameA),
-		Lag:        utils.BoolPtr(false),
-		LagSubLink: utils.BoolPtr(false),
-	})
-
-	cr.SetNodeEndpoint(nodeB.GetName(), &topov1alpha1.NddrTopologyTopologyLinkStateNodeEndpoint{
-		Name:       utils.StringPtr(interfaceNameB),
-		Lag:        utils.BoolPtr(false),
-		LagSubLink: utils.BoolPtr(false),
-	})
 	return nil
 }

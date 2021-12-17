@@ -59,6 +59,7 @@ type Tn interface {
 	GetStateTags() map[string]string
 	GetPlatform() string
 	GetNodeIndex() uint32
+	GetStatus() string
 	InitializeResource() error
 	SetStatus(string)
 	SetReason(string)
@@ -114,6 +115,13 @@ func (x *TopologyNode) GetTags() map[string]string {
 		s[*tag.Key] = *tag.Value
 	}
 	return s
+}
+
+func (x *TopologyNode) GetStatus() string {
+	if x.Status.TopoTopologyNode != nil && x.Status.TopoTopologyNode.State != nil && x.Status.TopoTopologyNode.State.Status != nil {
+		return *x.Status.TopoTopologyNode.State.Status
+	}
+	return "unknown"
 }
 
 func (x *TopologyNode) GetStateTags() map[string]string {
@@ -208,7 +216,7 @@ func (x *TopologyNode) SetNodeEndpoint(ep *NddrTopologyTopologyLinkStateNodeEndp
 			nodeep = &NddrTopologyTopologyNodeStateEndpoint{
 				Name:       ep.Name,
 				Lag:        ep.Lag,
-				LagSubLink: ep.LagSubLink,
+				LagSubLink: ep.LagMemberLink,
 			}
 			return
 		}
@@ -218,7 +226,7 @@ func (x *TopologyNode) SetNodeEndpoint(ep *NddrTopologyTopologyLinkStateNodeEndp
 		&NddrTopologyTopologyNodeStateEndpoint{
 			Name:       ep.Name,
 			Lag:        ep.Lag,
-			LagSubLink: ep.LagSubLink,
+			LagSubLink: ep.LagMemberLink,
 		})
 }
 
