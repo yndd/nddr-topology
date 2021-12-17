@@ -32,6 +32,7 @@ const (
 	KeyLink          = "link"       // used in allocation
 	KeyLinkLagMember = "lag-member" // true or false (default) -> this is set in the config
 	KeyLinkLag       = "lag"        // true or false (default) -> this is set on the logical link which is created by the topolink parser
+	KeyLinkLacp      = "lacp"       // true (default) or false 
 	KeyLinkKind      = "kind"       // "infra" (default), "loop" -> used when both sides of the link are the same
 	KeyLinkEPKind    = "kind"       // "infra" (default), "loop", "access", "oob"
 	//keyLinkEPSRIOV   = "sriov"   // "true", "false" (default)

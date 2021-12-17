@@ -277,6 +277,7 @@ func (x *TopologyLink) GetLagMember() bool {
 	if _, ok := x.GetTags()[KeyLinkLagMember]; ok {
 		return x.GetTags()[KeyLinkLagMember] == "true"
 	}
+	// default is false
 	return false
 }
 
@@ -284,7 +285,16 @@ func (x *TopologyLink) GetLag() bool {
 	if _, ok := x.GetTags()[KeyLinkLag]; ok {
 		return x.GetTags()[KeyLinkLag] == "true"
 	}
+	// default is false
 	return false
+}
+
+func (x *TopologyLink) GetLacp() bool {
+	if _, ok := x.GetTags()[KeyLinkLacp]; ok {
+		return x.GetTags()[KeyLinkLacp] == "true"
+	}
+	// default is true
+	return true
 }
 
 func (x *TopologyLink) GetLagAName() string {
