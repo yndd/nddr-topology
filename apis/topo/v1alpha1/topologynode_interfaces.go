@@ -132,7 +132,7 @@ func (x *TopologyNode) GetStateTags() map[string]string {
 	if reflect.ValueOf(x.Status.TopoTopologyNode.State.Tag).IsZero() {
 		return s
 	}
-	for _, tag := range x.Spec.TopoTopologyNode.Tag {
+	for _, tag := range x.Status.TopoTopologyNode.State.Tag {
 		s[*tag.Key] = *tag.Value
 	}
 	return s
