@@ -14,3 +14,5 @@ spec:
       tag:
       - key: platform
         value: sr1
+    - name: linux
+      

@@ -58,6 +58,7 @@ const (
 	reasonCannotInitialize      event.Reason = "CannotInitializeResource"
 	reasonCannotGetAllocations  event.Reason = "CannotGetAllocations"
 	reasonAppLogicFailed        event.Reason = "ApplogicFailed"
+	reasonCannotDeleteTags      event.Reason = "CannotDeleteTagsOfLogicalLink"
 )
 
 // ReconcilerOption is used to configure the Reconciler.
@@ -196,6 +197,22 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 	if meta.WasDeleted(cr) {
 		log = log.WithValues("deletion-timestamp", cr.GetDeletionTimestamp())
 
+		// we need to delete the tag if the member link gets deleted
+		if cr.GetLagMember() {
+			logicalLink, err := r.hooks.Get(ctx, cr)
+			if err == nil {
+				r.log.Debug("logical link exists", "Logical Link", logicalLink.GetName())
+				//for the multi-homed case we need to delete the tags of the member links
+				// that match the mh name
+				if err := r.hooks.DeleteApply(ctx, cr, logicalLink); err != nil {
+					record.Event(cr, event.Warning(reasonCannotDeleteTags, err))
+					log.Debug("Cannot delete tags of a logical link", "error", err)
+					cr.SetConditions(nddv1.ReconcileError(err), topov1alpha1.NotReady())
+					return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, cr), errUpdateStatus)
+				}
+			}
+		}
+
 		if err := r.managed.RemoveFinalizer(ctx, cr); err != nil {
 			// If this is the first time we encounter this issue we'll be
 			// requeued implicitly when we update our status with the new error
@@ -329,15 +346,20 @@ func (r *Reconciler) parseLink(ctx context.Context, cr topov1alpha1.Tl) error {
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				if err := r.hooks.Create(ctx, cr); err != nil {
-					r.log.Debug("logical link create")
 					return err
 				}
+				r.log.Debug("logical link create")
 				return nil
 			}
 			return err
 		}
 		r.log.Debug("logical link exists", "Logical Link", logicalLink.GetName())
-		//TODO for the multi-homed case we need to check if the tags are there
+
+		//for the multi-homed case we need to add the tags of the other member links
+		// that match the mh name
+		if err := r.hooks.Apply(ctx, cr, logicalLink); err != nil {
+			return err
+		}
 
 		return nil
 	}

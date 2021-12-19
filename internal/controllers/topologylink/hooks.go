@@ -45,6 +45,12 @@ type Hooks interface {
 
 	// Delete performs operations to deploy the child resources
 	Delete(ctx context.Context, cr topov1alpha1.Tl) error
+
+	// apply performs operations to update the resource
+	Apply(ctx context.Context, cr topov1alpha1.Tl, mhtl *topov1alpha1.TopologyLink) error
+
+	// apply performs operations to update the resource
+	DeleteApply(ctx context.Context, cr topov1alpha1.Tl, mhtl *topov1alpha1.TopologyLink) error
 }
 
 // DeviceDriverHooks performs operations to deploy the device driver.
@@ -80,6 +86,24 @@ func (h *Hook) Create(ctx context.Context, cr topov1alpha1.Tl) error {
 func (h *Hook) Delete(ctx context.Context, cr topov1alpha1.Tl) error {
 	link := buildLogicalTopologyLink(cr)
 	if err := h.client.Delete(ctx, link); err != nil {
+		return errors.Wrap(err, errDeleteLink)
+	}
+
+	return nil
+}
+
+func (h *Hook) Apply(ctx context.Context, cr topov1alpha1.Tl, mhtl *topov1alpha1.TopologyLink) error {
+	tl := updateLogicalTopologyLink(cr, mhtl)
+	if err := h.client.Apply(ctx, tl); err != nil {
+		return errors.Wrap(err, errDeleteLink)
+	}
+
+	return nil
+}
+
+func (h *Hook) DeleteApply(ctx context.Context, cr topov1alpha1.Tl, mhtl *topov1alpha1.TopologyLink) error {
+	tl := updateDeleteLogicalTopologyLink(cr, mhtl)
+	if err := h.client.Apply(ctx, tl); err != nil {
 		return errors.Wrap(err, errDeleteLink)
 	}
 

@@ -51,6 +51,7 @@ func buildLogicalTopologyLink(cr topov1alpha1.Tl) *topov1alpha1.TopologyLink {
 		epATags        []*topov1alpha1.TopoTopologyLinkEndpointsTag
 		epBTags        []*topov1alpha1.TopoTopologyLinkEndpointsTag
 	)
+	fmt.Printf("buildLogicalTopologyLink: %s mhA: %t, mhB: %t\n", cr.GetName(), cr.GetEndPointAMultiHoming(), cr.GetEndPointBMultiHoming())
 	if cr.GetEndPointAMultiHoming() || cr.GetEndPointBMultiHoming() {
 		if cr.GetEndPointAMultiHoming() {
 			// multihomed endpoint A
@@ -63,7 +64,7 @@ func buildLogicalTopologyLink(cr topov1alpha1.Tl) *topov1alpha1.TopologyLink {
 				{Key: utils.StringPtr(cr.GetEndpointANodeName()), Value: utils.StringPtr(cr.GetLagAName())},
 			}...)
 		} else {
-			name = strings.Join([]string{mhPrefix, cr.GetEndpointANodeName(), cr.GetEndPointAMultiHomingName()}, "-")
+			name = strings.Join([]string{mhPrefix, cr.GetEndpointANodeName()}, "-")
 			nodeNameA = cr.GetEndpointANodeName()
 			interfaceNameA = cr.GetLagAName()
 			epATags = cr.GetEndpointATagRaw()
@@ -79,7 +80,7 @@ func buildLogicalTopologyLink(cr topov1alpha1.Tl) *topov1alpha1.TopologyLink {
 				{Key: utils.StringPtr(cr.GetEndpointBNodeName()), Value: utils.StringPtr(cr.GetLagBName())},
 			}...)
 		} else {
-			name = strings.Join([]string{name, cr.GetEndpointBNodeName(), cr.GetEndPointBMultiHomingName()}, "-")
+			name = strings.Join([]string{name, cr.GetEndpointBNodeName()}, "-")
 			nodeNameB = cr.GetEndpointBNodeName()
 			interfaceNameB = cr.GetLagBName()
 			epBTags = cr.GetEndpointBTagRaw()
@@ -129,4 +130,58 @@ func buildLogicalTopologyLink(cr topov1alpha1.Tl) *topov1alpha1.TopologyLink {
 			},
 		},
 	}
+}
+
+func updateLogicalTopologyLink(cr topov1alpha1.Tl, mhtl *topov1alpha1.TopologyLink) *topov1alpha1.TopologyLink {
+	if cr.GetEndPointAMultiHoming() && mhtl.GetEndPointAMultiHoming() && (cr.GetEndPointAMultiHomingName() == mhtl.GetEndPointAMultiHomingName()) {
+		nodeNameA := cr.GetEndpointANodeName()
+		interfaceNameA := cr.GetLagAName()
+
+		fmt.Printf("updateLogicalTopologyLink: nodename: %s, itfcename: %s\n", nodeNameA, interfaceNameA)
+
+		found := false
+		for _, tag := range mhtl.GetEndpointATagRaw() {
+			if *tag.Key == nodeNameA && *tag.Value == interfaceNameA {
+				found = true
+				break
+			}
+		}
+		if !found {
+			mhtl.AddEndPointATag(nodeNameA, interfaceNameA)
+		}
+	}
+	if cr.GetEndPointBMultiHoming() && mhtl.GetEndPointBMultiHoming() && (cr.GetEndPointBMultiHomingName() == mhtl.GetEndPointBMultiHomingName()) {
+		nodeNameB := cr.GetEndpointBNodeName()
+		interfaceNameB := cr.GetLagBName()
+
+		found := false
+		for _, tag := range mhtl.GetEndpointBTagRaw() {
+			if *tag.Key == nodeNameB && *tag.Value == interfaceNameB {
+				found = true
+				break
+			}
+		}
+		if !found {
+			mhtl.AddEndPointBTag(nodeNameB, interfaceNameB)
+		}
+	}
+	return mhtl
+}
+
+func updateDeleteLogicalTopologyLink(cr topov1alpha1.Tl, mhtl *topov1alpha1.TopologyLink) *topov1alpha1.TopologyLink {
+	if cr.GetEndPointAMultiHoming() && mhtl.GetEndPointAMultiHoming() && (cr.GetEndPointAMultiHomingName() == mhtl.GetEndPointAMultiHomingName()) {
+		nodeNameA := cr.GetEndpointANodeName()
+		interfaceNameA := cr.GetLagAName()
+
+		fmt.Printf("updateLogicalTopologyLink: nodename: %s, itfcename: %s\n", nodeNameA, interfaceNameA)
+
+		mhtl.DeleteEndPointATag(nodeNameA, interfaceNameA)
+	}
+	if cr.GetEndPointBMultiHoming() && mhtl.GetEndPointBMultiHoming() && (cr.GetEndPointBMultiHomingName() == mhtl.GetEndPointBMultiHomingName()) {
+		nodeNameB := cr.GetEndpointBNodeName()
+		interfaceNameB := cr.GetLagBName()
+
+		mhtl.DeleteEndPointBTag(nodeNameB, interfaceNameB)
+	}
+	return mhtl
 }

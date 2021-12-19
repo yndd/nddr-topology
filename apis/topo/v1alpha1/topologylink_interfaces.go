@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
 	"reflect"
 
 	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
@@ -88,6 +89,10 @@ type Tl interface {
 	GetNodeEndpoints() []*NddrTopologyTopologyLinkStateNode
 	SetKind(s string)
 	GetKind() string
+	AddEndPointATag(string, string)
+	AddEndPointBTag(string, string)
+	DeleteEndPointATag(key string, value string)
+	DeleteEndPointBTag(key string, value string)
 }
 
 // GetCondition of this Network Node.
@@ -245,23 +250,24 @@ func (x *TopologyLink) GetEndPointBGroup() string {
 }
 
 func (x *TopologyLink) GetEndPointAMultiHoming() bool {
-	if _, ok := x.GetEndpointATag()[KeyLinkEPMultiHoming]; ok {
-		return x.GetTags()[KeyLinkEPMultiHoming] == "true"
+	if n, ok := x.GetEndpointATag()[KeyLinkEPMultiHoming]; ok {
+		fmt.Printf("GetEndPointAMultiHoming: %s\n", n)
+		return n == "true"
 	}
 	// default
 	return false
 }
 
 func (x *TopologyLink) GetEndPointBMultiHoming() bool {
-	if _, ok := x.GetEndpointBTag()[KeyLinkEPMultiHoming]; ok {
-		return x.GetTags()[KeyLinkEPMultiHoming] == "true"
+	if n, ok := x.GetEndpointBTag()[KeyLinkEPMultiHoming]; ok {
+		return n == "true"
 	}
 	// default
 	return false
 }
 
 func (x *TopologyLink) GetEndPointAMultiHomingName() string {
-	if n, ok := x.GetEndpointATag()[KeyLinkEPMultiHoming]; ok {
+	if n, ok := x.GetEndpointATag()[KeyLinkEPMultiHomingName]; ok {
 		return n
 	}
 	// default
@@ -269,7 +275,7 @@ func (x *TopologyLink) GetEndPointAMultiHomingName() string {
 }
 
 func (x *TopologyLink) GetEndPointBMultiHomingName() string {
-	if n, ok := x.GetEndpointBTag()[KeyLinkEPMultiHoming]; ok {
+	if n, ok := x.GetEndpointBTag()[KeyLinkEPMultiHomingName]; ok {
 		return n
 	}
 	// default
@@ -453,4 +459,48 @@ func (x *TopologyLink) GetKind() string {
 
 	}
 	return LinkEPKindUnknown.String()
+}
+
+func (x *TopologyLink) AddEndPointATag(key string, value string) {
+	x.Spec.TopoTopologyLink.Endpoints[0].Tag = append(x.Spec.TopoTopologyLink.Endpoints[0].Tag,
+		&TopoTopologyLinkEndpointsTag{
+			Key:   &key,
+			Value: &value,
+		})
+}
+
+func (x *TopologyLink) AddEndPointBTag(key string, value string) {
+	x.Spec.TopoTopologyLink.Endpoints[1].Tag = append(x.Spec.TopoTopologyLink.Endpoints[1].Tag,
+		&TopoTopologyLinkEndpointsTag{
+			Key:   &key,
+			Value: &value,
+		})
+}
+
+func (x *TopologyLink) DeleteEndPointATag(key string, value string) {
+	found := false
+	var idx int
+	for i, tag := range x.Spec.TopoTopologyLink.Endpoints[0].Tag {
+		if *tag.Key == key && *tag.Value == value {
+			idx = i
+			found = true
+		}
+	}
+	if found {
+		x.Spec.TopoTopologyLink.Endpoints[0].Tag = append(x.Spec.TopoTopologyLink.Endpoints[0].Tag[:idx], x.Spec.TopoTopologyLink.Endpoints[0].Tag[idx+1:]...)
+	}
+}
+
+func (x *TopologyLink) DeleteEndPointBTag(key string, value string) {
+	found := false
+	var idx int
+	for i, tag := range x.Spec.TopoTopologyLink.Endpoints[1].Tag {
+		if *tag.Key == key && *tag.Value == value {
+			idx = i
+			found = true
+		}
+	}
+	if found {
+		x.Spec.TopoTopologyLink.Endpoints[1].Tag = append(x.Spec.TopoTopologyLink.Endpoints[1].Tag[:idx], x.Spec.TopoTopologyLink.Endpoints[1].Tag[idx+1:]...)
+	}
 }

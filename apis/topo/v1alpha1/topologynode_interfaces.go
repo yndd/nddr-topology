@@ -58,12 +58,14 @@ type Tn interface {
 	GetTags() map[string]string
 	GetStateTags() map[string]string
 	GetPlatform() string
+	GetPosition() string
 	GetNodeIndex() uint32
 	GetStatus() string
 	InitializeResource() error
 	SetStatus(string)
 	SetReason(string)
 	SetPlatform(string)
+	SetPosition(string)
 	SetNodeEndpoint(ep *NddrTopologyTopologyLinkStateNodeEndpoint)
 	GetNodeEndpoints() []*NddrTopologyTopologyNodeStateEndpoint
 }
@@ -142,6 +144,13 @@ func (x *TopologyNode) GetPlatform() string {
 	return ""
 }
 
+func (x *TopologyNode) GetPosition() string {
+	if t, ok := x.GetStateTags()[KeyNodePosition]; ok {
+		return t
+	}
+	return ""
+}
+
 func (x *TopologyNode) GetNodeIndex() uint32 {
 	if t, ok := x.GetTags()[KeyNodeIndex]; ok {
 		if i, err := strconv.Atoi(t); err == nil {
@@ -202,6 +211,19 @@ func (x *TopologyNode) SetPlatform(s string) {
 	}
 	x.Status.TopoTopologyNode.State.Tag = append(x.Status.TopoTopologyNode.State.Tag, &NddrTopologyTopologyNodeStateTag{
 		Key:   utils.StringPtr(KeyNodePlatform),
+		Value: &s,
+	})
+}
+
+func (x *TopologyNode) SetPosition(s string) {
+	for _, tag := range x.Status.TopoTopologyNode.State.Tag {
+		if *tag.Key == KeyNodePosition {
+			tag.Value = &s
+			return
+		}
+	}
+	x.Status.TopoTopologyNode.State.Tag = append(x.Status.TopoTopologyNode.State.Tag, &NddrTopologyTopologyNodeStateTag{
+		Key:   utils.StringPtr(KeyNodePosition),
 		Value: &s,
 	})
 }
