@@ -146,7 +146,7 @@ func (x *TopologyNode) GetPlatform() string {
 }
 
 func (x *TopologyNode) GetPosition() string {
-	fmt.Printf("getposition tags: %v\n", x.GetStateTags)
+	fmt.Printf("getposition tags: %v\n", x.GetStateTags())
 	if t, ok := x.GetStateTags()[KeyNodePosition]; ok {
 		return t
 	}
