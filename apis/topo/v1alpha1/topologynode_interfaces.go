@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"fmt"
 	"reflect"
 	"strconv"
 
@@ -146,8 +145,7 @@ func (x *TopologyNode) GetPlatform() string {
 }
 
 func (x *TopologyNode) GetPosition() string {
-	fmt.Printf("getposition tags: %v\n", x.GetStateTags())
-	if t, ok := x.GetStateTags()[KeyNodePosition]; ok {
+	if t, ok := x.GetTags()[KeyNodePosition]; ok {
 		return t
 	}
 	return ""
@@ -218,13 +216,13 @@ func (x *TopologyNode) SetPlatform(s string) {
 }
 
 func (x *TopologyNode) SetPosition(s string) {
-	for _, tag := range x.Status.TopoTopologyNode.State.Tag {
+	for _, tag := range x.Spec.TopoTopologyNode.Tag {
 		if *tag.Key == KeyNodePosition {
 			tag.Value = &s
 			return
 		}
 	}
-	x.Status.TopoTopologyNode.State.Tag = append(x.Status.TopoTopologyNode.State.Tag, &NddrTopologyTopologyNodeStateTag{
+	x.Spec.TopoTopologyNode.Tag = append(x.Spec.TopoTopologyNode.Tag, &TopoTopologyNodeTag{
 		Key:   utils.StringPtr(KeyNodePosition),
 		Value: &s,
 	})

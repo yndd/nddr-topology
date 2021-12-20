@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"fmt"
 	"reflect"
 
 	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
@@ -251,7 +250,6 @@ func (x *TopologyLink) GetEndPointBGroup() string {
 
 func (x *TopologyLink) GetEndPointAMultiHoming() bool {
 	if n, ok := x.GetEndpointATag()[KeyLinkEPMultiHoming]; ok {
-		fmt.Printf("GetEndPointAMultiHoming: %s\n", n)
 		return n == "true"
 	}
 	// default

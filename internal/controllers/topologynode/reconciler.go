@@ -239,9 +239,11 @@ func (r *Reconciler) handleAppLogic(ctx context.Context, cr topov1alpha1.Tn) err
 		return err
 	}
 
-	if err := r.setPosition(ctx, cr, topo); err != nil {
-		return err
-	}
+	/*
+		if err := r.setPosition(ctx, cr, topo); err != nil {
+			return err
+		}
+	*/
 
 	if err := r.setPlatform(ctx, cr, topo); err != nil {
 		return err
@@ -272,22 +274,9 @@ func (r *Reconciler) handleStatus(ctx context.Context, cr topov1alpha1.Tn, topo 
 	return nil
 }
 
-func (r *Reconciler) setPosition(ctx context.Context, cr topov1alpha1.Tn, topo *topov1alpha1.Topology) error {
-	r.log.Debug("SetPosition", "platform", cr.GetPlatform())
-
-	switch cr.GetKindName() {
-	case "sros", "srl":
-		cr.SetPosition(topov1alpha1.PositionNetwork.String())
-	default:
-		cr.SetPosition(topov1alpha1.PositionEndpoint.String())
-	}
-
-	return nil
-}
-
 func (r *Reconciler) setPlatform(ctx context.Context, cr topov1alpha1.Tn, topo *topov1alpha1.Topology) error {
 	r.log.Debug("Setflatform", "platform", cr.GetPlatform())
-	if cr.GetPlatform() == "" && cr.GetPosition() == topov1alpha1.PositionNetwork.String() {
+	if cr.GetPlatform() == "" && cr.GetPosition() != topov1alpha1.NodePositionServer.String() {
 		// platform is not defined at node level
 		p := topo.GetPlatformByKindName(cr.GetKindName())
 		if p != "" {

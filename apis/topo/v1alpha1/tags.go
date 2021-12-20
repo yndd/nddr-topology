@@ -24,10 +24,10 @@ const (
 )
 
 const (
-	KeyNode               = "node"      // used in allocation e.g. aspool and ipam
-	KeyInterface          = "interface" // used in allocation e.g. ipam
-	KeyNodePlatform       = "platform"  // ixdd2, sr1, sr1s
-	KeyNodePosition       = "position"
+	KeyNode               = "node"          // used in allocation e.g. aspool and ipam
+	KeyInterface          = "interface"     // used in allocation e.g. ipam
+	KeyNodePlatform       = "platform"      // ixdd2, sr1, sr1s
+	KeyNodePosition       = "position"      // server, leaf, spine, superspine, borderleaf, dcgw
 	KeyNodeIndex          = "index"         // index for determinsitic allocations
 	KeyLink               = "link"          // used in allocation
 	KeyLinkLagMember      = "lag-member"    // true or false (default) -> this is set in the config
@@ -55,19 +55,31 @@ const (
 // set multihoming-name to a global unique name
 // -> the link reconciler creates a new logical link with name : <prefix:logical-mh-link>-<multihoming-name>-<node-name-epB><lag-name-epB>)
 
-type Position string
+type NodePosition string
 
 const (
-	PositionNetwork  Position = "network"
-	PositionEndpoint Position = "endpoint"
+	NodePositionLeaf       NodePosition = "leaf"
+	NodePositionBorderleaf NodePosition = "borderleaf"
+	NodePositionSpine      NodePosition = "spine"
+	NodePositionSuperSpine NodePosition = "superspine"
+	NodePositionDcgw       NodePosition = "dcgw"
+	NodePositionServer     NodePosition = "server"
 )
 
-func (s Position) String() string {
+func (s NodePosition) String() string {
 	switch s {
-	case PositionNetwork:
-		return "network"
-	case PositionEndpoint:
-		return "endpoint"
+	case NodePositionLeaf:
+		return "leaf"
+	case NodePositionBorderleaf:
+		return "borderleaf"
+	case NodePositionSpine:
+		return "spine"
+	case NodePositionSuperSpine:
+		return "superspine"
+	case NodePositionDcgw:
+		return "dcgw"
+	case NodePositionServer:
+		return "server"
 	}
 	return "unknown"
 }

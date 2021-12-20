@@ -20,7 +20,6 @@ import (
 
 	//nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
 
-	"fmt"
 	"strings"
 
 	"github.com/yndd/ndd-runtime/pkg/meta"
@@ -51,7 +50,7 @@ func buildLogicalTopologyLink(cr topov1alpha1.Tl) *topov1alpha1.TopologyLink {
 		epATags        []*topov1alpha1.TopoTopologyLinkEndpointsTag
 		epBTags        []*topov1alpha1.TopoTopologyLinkEndpointsTag
 	)
-	fmt.Printf("buildLogicalTopologyLink: %s mhA: %t, mhB: %t\n", cr.GetName(), cr.GetEndPointAMultiHoming(), cr.GetEndPointBMultiHoming())
+	//fmt.Printf("buildLogicalTopologyLink: %s mhA: %t, mhB: %t\n", cr.GetName(), cr.GetEndPointAMultiHoming(), cr.GetEndPointBMultiHoming())
 	if cr.GetEndPointAMultiHoming() || cr.GetEndPointBMultiHoming() {
 		if cr.GetEndPointAMultiHoming() {
 			// multihomed endpoint A
@@ -95,8 +94,8 @@ func buildLogicalTopologyLink(cr topov1alpha1.Tl) *topov1alpha1.TopologyLink {
 		epBTags = cr.GetEndpointBTagRaw()
 	}
 
-	fmt.Printf("buildLogicalTopologyLink: name: %s nodeA: %s, nodeB: %s, itfcA: %s, itfceB: %s\n", name, nodeNameA, nodeNameB, interfaceNameA, interfaceNameB)
-	fmt.Printf("buildLogicalTopologyLink: epAtags: %v, epBtags: %v\n", cr.GetEndpointATag(), cr.GetEndpointBTag())
+	//fmt.Printf("buildLogicalTopologyLink: name: %s nodeA: %s, nodeB: %s, itfcA: %s, itfceB: %s\n", name, nodeNameA, nodeNameB, interfaceNameA, interfaceNameB)
+	//fmt.Printf("buildLogicalTopologyLink: epAtags: %v, epBtags: %v\n", cr.GetEndpointATag(), cr.GetEndpointBTag())
 	return &topov1alpha1.TopologyLink{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
@@ -137,7 +136,7 @@ func updateLogicalTopologyLink(cr topov1alpha1.Tl, mhtl *topov1alpha1.TopologyLi
 		nodeNameA := cr.GetEndpointANodeName()
 		interfaceNameA := cr.GetLagAName()
 
-		fmt.Printf("updateLogicalTopologyLink: nodename: %s, itfcename: %s\n", nodeNameA, interfaceNameA)
+		//fmt.Printf("updateLogicalTopologyLink: nodename: %s, itfcename: %s\n", nodeNameA, interfaceNameA)
 
 		found := false
 		for _, tag := range mhtl.GetEndpointATagRaw() {
@@ -173,7 +172,7 @@ func updateDeleteLogicalTopologyLink(cr topov1alpha1.Tl, mhtl *topov1alpha1.Topo
 		nodeNameA := cr.GetEndpointANodeName()
 		interfaceNameA := cr.GetLagAName()
 
-		fmt.Printf("updateLogicalTopologyLink: nodename: %s, itfcename: %s\n", nodeNameA, interfaceNameA)
+		//fmt.Printf("updateLogicalTopologyLink: nodename: %s, itfcename: %s\n", nodeNameA, interfaceNameA)
 
 		mhtl.DeleteEndPointATag(nodeNameA, interfaceNameA)
 	}
