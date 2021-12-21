@@ -460,6 +460,13 @@ func (x *TopologyLink) GetKind() string {
 }
 
 func (x *TopologyLink) AddEndPointATag(key string, value string) {
+	for _, tag := range x.Spec.TopoTopologyLink.Endpoints[0].Tag {
+		if *tag.Key == key {
+			tag.Value = &value
+			return
+		}
+	}
+	// if not found append
 	x.Spec.TopoTopologyLink.Endpoints[0].Tag = append(x.Spec.TopoTopologyLink.Endpoints[0].Tag,
 		&TopoTopologyLinkEndpointsTag{
 			Key:   &key,
@@ -468,6 +475,13 @@ func (x *TopologyLink) AddEndPointATag(key string, value string) {
 }
 
 func (x *TopologyLink) AddEndPointBTag(key string, value string) {
+	for _, tag := range x.Spec.TopoTopologyLink.Endpoints[1].Tag {
+		if *tag.Key == key {
+			tag.Value = &value
+			return
+		}
+	}
+	// if not found append
 	x.Spec.TopoTopologyLink.Endpoints[1].Tag = append(x.Spec.TopoTopologyLink.Endpoints[1].Tag,
 		&TopoTopologyLinkEndpointsTag{
 			Key:   &key,

@@ -51,6 +51,9 @@ type Hooks interface {
 
 	// apply performs operations to update the resource
 	DeleteApply(ctx context.Context, cr topov1alpha1.Tl, mhtl *topov1alpha1.TopologyLink) error
+
+	// deletes the node/interfacename from the endpoint tags
+	DeleteApplyNode(ctx context.Context, cr topov1alpha1.Tl, i int, nodeName, interfaceName string) error
 }
 
 // DeviceDriverHooks performs operations to deploy the device driver.
@@ -84,8 +87,7 @@ func (h *Hook) Create(ctx context.Context, cr topov1alpha1.Tl) error {
 }
 
 func (h *Hook) Delete(ctx context.Context, cr topov1alpha1.Tl) error {
-	link := buildLogicalTopologyLink(cr)
-	if err := h.client.Delete(ctx, link); err != nil {
+	if err := h.client.Delete(ctx, cr); err != nil {
 		return errors.Wrap(err, errDeleteLink)
 	}
 
@@ -103,6 +105,15 @@ func (h *Hook) Apply(ctx context.Context, cr topov1alpha1.Tl, mhtl *topov1alpha1
 
 func (h *Hook) DeleteApply(ctx context.Context, cr topov1alpha1.Tl, mhtl *topov1alpha1.TopologyLink) error {
 	tl := updateDeleteLogicalTopologyLink(cr, mhtl)
+	if err := h.client.Apply(ctx, tl); err != nil {
+		return errors.Wrap(err, errDeleteLink)
+	}
+
+	return nil
+}
+
+func (h *Hook) DeleteApplyNode(ctx context.Context, cr topov1alpha1.Tl, i int, nodeName, interfaceName string) error {
+	tl := updateDeleteLogicalTopologyLinkNodeEndpoint(cr, i, nodeName, interfaceName)
 	if err := h.client.Apply(ctx, tl); err != nil {
 		return errors.Wrap(err, errDeleteLink)
 	}

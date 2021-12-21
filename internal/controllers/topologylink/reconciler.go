@@ -18,6 +18,7 @@ package topologylink
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -301,67 +302,206 @@ func (r *Reconciler) handleStatus(ctx context.Context, cr topov1alpha1.Tl, topo 
 }
 
 func (r *Reconciler) parseLink(ctx context.Context, cr topov1alpha1.Tl) error {
-
-	if cr.GetLag() {
-		// this is a logical link
-
-		// for infra links we set the kind at the link level using the information from the spec
-		if cr.GetEndPointAKind() == topov1alpha1.LinkEPKindInfra.String() && cr.GetEndPointBKind() == topov1alpha1.LinkEPKindInfra.String() {
-			cr.SetKind(topov1alpha1.LinkEPKindInfra.String())
-		}
-		return nil
-	}
 	// parse link
-	nameNodeA := cr.GetEndpointANodeName()
-	//interfaceNameA := cr.GetEndpointAInterfaceName()
-	nodeA := &topov1alpha1.TopologyNode{}
-	if err := r.client.Get(ctx, types.NamespacedName{
-		Namespace: cr.GetNamespace(),
-		Name:      nameNodeA}, nodeA); err != nil {
-		// node A is not found
-		cr.SetStatus("down")
-		cr.SetReason("nodeA not found")
+
+	// validates if the nodes of the links are present in the k8s api are not
+	// if an error occurs during validation an error is returned
+	if err := r.validateNodes(ctx, cr); err != nil {
 		return err
 	}
-	nameNodeB := cr.GetEndpointBNodeName()
-	//interfaceNameB := cr.GetEndpointBInterfaceName()
-	nodeB := &topov1alpha1.TopologyNode{}
-	if err := r.client.Get(ctx, types.NamespacedName{
-		Namespace: cr.GetNamespace(),
-		Name:      nameNodeB}, nodeB); err != nil {
-		// node A is not found
-		cr.SetStatus("down")
-		cr.SetReason("nodeB not found")
-		return err
-	}
+	/*
+		if cr.GetEndPointAMultiHoming() && cr.GetLag() {
+			// when we are in a multi-homed case for the logical endpoint
+			// we need to validate if the endpoints still exists
+			found := false
+			for k, v := range cr.GetEndpointATag() {
+				if strings.Contains(k, nodePrefix) {
+					nodeName := strings.TrimPrefix(k, nodePrefix+":")
+					node := &topov1alpha1.TopologyNode{}
+					if err := r.client.Get(ctx, types.NamespacedName{
+						Namespace: cr.GetNamespace(),
+						Name:      nodeName}, node); err != nil {
+						if resource.IgnoreNotFound(err) != nil {
+							return err
+						}
+						// node no longer exists, we can delete the node tags from the logocal element
+						if err := r.hooks.DeleteApplyNode(ctx, cr, 0, k, v); err != nil {
+							return err
+						}
+					} else {
+						found = true
+					}
+				}
+			}
+			if !found {
+				// when none of the mh nodes are found we can delete the logical link
+				if err := r.hooks.Delete(ctx, cr); err != nil {
+					return err
+				}
+				r.log.Debug("none of the member links found, delete the mh link")
+				return nil
+			}
+		} else {
+			nameNodeA := cr.GetEndpointANodeName()
+			//interfaceNameA := cr.GetEndpointAInterfaceName()
+			nodeA := &topov1alpha1.TopologyNode{}
+			if err := r.client.Get(ctx, types.NamespacedName{
+				Namespace: cr.GetNamespace(),
+				Name:      nameNodeA}, nodeA); err != nil {
+				// for a lag when the node no longer exists we can delete the logical link
+				if cr.GetLag() {
+					if resource.IgnoreNotFound(err) != nil {
+						return err
+					}
+					// node no longer exists, we can delete the logical element
+					if err := r.hooks.Delete(ctx, cr); err != nil {
+						return err
+					}
+					return nil
+				}
+				// node A is not found
+				cr.SetStatus("down")
+				cr.SetReason("nodeA not found")
+				return err
+			}
+		}
+
+		if !cr.GetEndPointBMultiHoming() {
+			nameNodeB := cr.GetEndpointBNodeName()
+			//interfaceNameB := cr.GetEndpointBInterfaceName()
+			nodeB := &topov1alpha1.TopologyNode{}
+			if err := r.client.Get(ctx, types.NamespacedName{
+				Namespace: cr.GetNamespace(),
+				Name:      nameNodeB}, nodeB); err != nil {
+				// node A is not found
+				cr.SetStatus("down")
+				cr.SetReason("nodeB not found")
+				return err
+			}
+		}
+	*/
 
 	// for infra links we set the kind at the link level using the information from the spec
 	if cr.GetEndPointAKind() == topov1alpha1.LinkEPKindInfra.String() && cr.GetEndPointBKind() == topov1alpha1.LinkEPKindInfra.String() {
 		cr.SetKind(topov1alpha1.LinkEPKindInfra.String())
 	}
 
-	// check if link is part of a lag
+	if cr.GetLag() {
+		// this is a logical link (single homes or multihomed), we dont need to process it since the member links take care
+		// of crud operation
+		return nil
+	}
+
+	// check if the link is part of a lag
 	if cr.GetLagMember() {
 		logicalLink, err := r.hooks.Get(ctx, cr)
 		if err != nil {
-			if strings.Contains(err.Error(), "not found") {
-				if err := r.hooks.Create(ctx, cr); err != nil {
-					return err
-				}
-				r.log.Debug("logical link create")
-				return nil
+			if resource.IgnoreNotFound(err) != nil {
+				return err
 			}
-			return err
+			if err := r.hooks.Create(ctx, cr); err != nil {
+				return err
+			}
+			r.log.Debug("logical link created")
+			return nil
+
 		}
 		r.log.Debug("logical link exists", "Logical Link", logicalLink.GetName())
 
-		//for the multi-homed case we need to add the tags of the other member links
+		// for the multi-homed case we need to add the tags of the other member links
 		// that match the mh name
 		if err := r.hooks.Apply(ctx, cr, logicalLink); err != nil {
 			return err
 		}
 
 		return nil
+	}
+	return nil
+}
+
+func (r *Reconciler) validateNodes(ctx context.Context, cr topov1alpha1.Tl) error {
+	for i := 0; i <= 1; i++ {
+		var multihoming bool
+		var nodeName string
+		var tags map[string]string
+		lag := cr.GetLag()
+		switch i {
+		case 0:
+			nodeName = cr.GetEndpointANodeName()
+			multihoming = cr.GetEndPointAMultiHoming()
+			tags = cr.GetEndpointATag()
+		case 1:
+			nodeName = cr.GetEndpointBNodeName()
+			multihoming = cr.GetEndPointBMultiHoming()
+			tags = cr.GetEndpointBTag()
+		}
+
+		// lag are logical links which are created based on member links
+		// for singlehomed logical links if the node no longer exists, we delete the sh-logical-link
+		// for multi-homed logical links if a member node no longer exists, we delete the tags related to the node
+		// for multi-homed logical links of all member nodes no longer exist, we delete the mh-logical link
+		if lag {
+			if multihoming {
+				// node validation happens through the endpoint tags
+				// a nodetag has a prefix of node:
+				found := false
+				for k, v := range tags {
+					if strings.Contains(k, nodePrefix) {
+						nodeName := strings.TrimPrefix(k, nodePrefix+":")
+						node := &topov1alpha1.TopologyNode{}
+						if err := r.client.Get(ctx, types.NamespacedName{
+							Namespace: cr.GetNamespace(),
+							Name:      nodeName}, node); err != nil {
+							if resource.IgnoreNotFound(err) != nil {
+								return err
+							}
+							r.log.Debug("mh-ep logical-link:: member node not found, delete the ep node tags", "nodeName", nodeName)
+							// node no longer exists, we can delete the node tags from the logocal element
+							if err := r.hooks.DeleteApplyNode(ctx, cr, 0, k, v); err != nil {
+								return err
+							}
+						} else {
+							found = true
+						}
+					}
+				}
+				if !found {
+					// when none of the mh nodes are found we can delete the logical link
+					if err := r.hooks.Delete(ctx, cr); err != nil {
+						return err
+					}
+					r.log.Debug("mh-ep logical-link: none of the member nodes wwere found, delete the logical-link")
+					return nil
+				}
+			} else {
+				node := &topov1alpha1.TopologyNode{}
+				if err := r.client.Get(ctx, types.NamespacedName{
+					Namespace: cr.GetNamespace(),
+					Name:      nodeName}, node); err != nil {
+					if resource.IgnoreNotFound(err) != nil {
+						return err
+					}
+					r.log.Debug("sh-ep logical-link: node not found, delete the logical-link", "nodeName", nodeName)
+					// node no longer exists, we can delete the logical element
+					if err := r.hooks.Delete(ctx, cr); err != nil {
+						return err
+					}
+					// when delete is successfull we finish/return
+					return nil
+				}
+			}
+		} else {
+			// individual links
+			node := &topov1alpha1.TopologyNode{}
+			if err := r.client.Get(ctx, types.NamespacedName{
+				Namespace: cr.GetNamespace(),
+				Name:      nodeName}, node); err != nil {
+				r.log.Debug("individual link: node not found", "nodeName", nodeName)
+				cr.SetStatus("down")
+				cr.SetReason(fmt.Sprintf("node %d not found", i))
+				return err
+			}
+		}
 	}
 	return nil
 }

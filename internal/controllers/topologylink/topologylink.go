@@ -32,6 +32,7 @@ const (
 	shPrefix    = "logical-sh-link"
 	mhPrefix    = "logical-mh-link"
 	labelPrefix = "nddo-infra"
+	nodePrefix  = "node"
 )
 
 func buildLogicalTopologyLink(cr topov1alpha1.Tl) *topov1alpha1.TopologyLink {
@@ -57,10 +58,11 @@ func buildLogicalTopologyLink(cr topov1alpha1.Tl) *topov1alpha1.TopologyLink {
 			name = strings.Join([]string{mhPrefix, cr.GetEndPointAMultiHomingName()}, "-")
 			nodeNameA = ""
 			interfaceNameA = cr.GetEndPointAMultiHomingName()
+			tagNodeName := strings.Join([]string{nodePrefix, cr.GetEndpointANodeName()}, ":")
 			epATags = cr.GetEndpointATagRaw()
 			epATags = append(epATags, []*topov1alpha1.TopoTopologyLinkEndpointsTag{
 				{Key: utils.StringPtr(topov1alpha1.KeyLinkEPMultiHoming), Value: utils.StringPtr("true")},
-				{Key: utils.StringPtr(cr.GetEndpointANodeName()), Value: utils.StringPtr(cr.GetLagAName())},
+				{Key: utils.StringPtr(tagNodeName), Value: utils.StringPtr(cr.GetLagAName())},
 			}...)
 		} else {
 			name = strings.Join([]string{mhPrefix, cr.GetEndpointANodeName()}, "-")
@@ -73,10 +75,11 @@ func buildLogicalTopologyLink(cr topov1alpha1.Tl) *topov1alpha1.TopologyLink {
 			name = strings.Join([]string{name, cr.GetEndPointBMultiHomingName()}, "-")
 			nodeNameB = ""
 			interfaceNameB = cr.GetEndPointAMultiHomingName()
+			tagNodeName := strings.Join([]string{nodePrefix, cr.GetEndpointBNodeName()}, ":")
 			epBTags = cr.GetEndpointBTagRaw()
 			epBTags = append(epBTags, []*topov1alpha1.TopoTopologyLinkEndpointsTag{
 				{Key: utils.StringPtr(topov1alpha1.KeyLinkEPMultiHoming), Value: utils.StringPtr("true")},
-				{Key: utils.StringPtr(cr.GetEndpointBNodeName()), Value: utils.StringPtr(cr.GetLagBName())},
+				{Key: utils.StringPtr(tagNodeName), Value: utils.StringPtr(cr.GetLagBName())},
 			}...)
 		} else {
 			name = strings.Join([]string{name, cr.GetEndpointBNodeName()}, "-")
@@ -145,8 +148,9 @@ func updateLogicalTopologyLink(cr topov1alpha1.Tl, mhtl *topov1alpha1.TopologyLi
 				break
 			}
 		}
+		tagNodeName := strings.Join([]string{nodePrefix, nodeNameA}, ":")
 		if !found {
-			mhtl.AddEndPointATag(nodeNameA, interfaceNameA)
+			mhtl.AddEndPointATag(tagNodeName, interfaceNameA)
 		}
 	}
 	if cr.GetEndPointBMultiHoming() && mhtl.GetEndPointBMultiHoming() && (cr.GetEndPointBMultiHomingName() == mhtl.GetEndPointBMultiHomingName()) {
@@ -160,8 +164,9 @@ func updateLogicalTopologyLink(cr topov1alpha1.Tl, mhtl *topov1alpha1.TopologyLi
 				break
 			}
 		}
+		tagNodeName := strings.Join([]string{nodePrefix, nodeNameB}, ":")
 		if !found {
-			mhtl.AddEndPointBTag(nodeNameB, interfaceNameB)
+			mhtl.AddEndPointBTag(tagNodeName, interfaceNameB)
 		}
 	}
 	return mhtl
@@ -169,18 +174,28 @@ func updateLogicalTopologyLink(cr topov1alpha1.Tl, mhtl *topov1alpha1.TopologyLi
 
 func updateDeleteLogicalTopologyLink(cr topov1alpha1.Tl, mhtl *topov1alpha1.TopologyLink) *topov1alpha1.TopologyLink {
 	if cr.GetEndPointAMultiHoming() && mhtl.GetEndPointAMultiHoming() && (cr.GetEndPointAMultiHomingName() == mhtl.GetEndPointAMultiHomingName()) {
-		nodeNameA := cr.GetEndpointANodeName()
 		interfaceNameA := cr.GetLagAName()
+		tagNodeName := strings.Join([]string{nodePrefix, cr.GetEndpointANodeName()}, ":")
 
 		//fmt.Printf("updateLogicalTopologyLink: nodename: %s, itfcename: %s\n", nodeNameA, interfaceNameA)
 
-		mhtl.DeleteEndPointATag(nodeNameA, interfaceNameA)
+		mhtl.DeleteEndPointATag(tagNodeName, interfaceNameA)
 	}
 	if cr.GetEndPointBMultiHoming() && mhtl.GetEndPointBMultiHoming() && (cr.GetEndPointBMultiHomingName() == mhtl.GetEndPointBMultiHomingName()) {
-		nodeNameB := cr.GetEndpointBNodeName()
 		interfaceNameB := cr.GetLagBName()
+		tagNodeName := strings.Join([]string{nodePrefix, cr.GetEndpointBNodeName()}, ":")
 
-		mhtl.DeleteEndPointBTag(nodeNameB, interfaceNameB)
+		mhtl.DeleteEndPointBTag(tagNodeName, interfaceNameB)
 	}
 	return mhtl
+}
+
+func updateDeleteLogicalTopologyLinkNodeEndpoint(cr topov1alpha1.Tl, i int, nodeName, interfaceName string) topov1alpha1.Tl {
+	switch i {
+	case 0:
+		cr.DeleteEndPointATag(nodeName, interfaceName)
+	case 1:
+		cr.DeleteEndPointATag(nodeName, interfaceName)
+	}
+	return cr
 }
