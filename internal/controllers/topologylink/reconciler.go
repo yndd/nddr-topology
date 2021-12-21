@@ -315,8 +315,8 @@ func (r *Reconciler) parseLink(ctx context.Context, cr topov1alpha1.Tl) error {
 			// we need to validate if the endpoints still exists
 			found := false
 			for k, v := range cr.GetEndpointATag() {
-				if strings.Contains(k, nodePrefix) {
-					nodeName := strings.TrimPrefix(k, nodePrefix+":")
+				if strings.Contains(k, topov1alpha1.NodePrefix) {
+					nodeName := strings.TrimPrefix(k, topov1alpha1.NodePrefix+":")
 					node := &topov1alpha1.TopologyNode{}
 					if err := r.client.Get(ctx, types.NamespacedName{
 						Namespace: cr.GetNamespace(),
@@ -446,8 +446,8 @@ func (r *Reconciler) validateNodes(ctx context.Context, cr topov1alpha1.Tl) erro
 				// a nodetag has a prefix of node:
 				found := false
 				for k, v := range tags {
-					if strings.Contains(k, nodePrefix) {
-						nodeName := strings.TrimPrefix(k, nodePrefix+":")
+					if strings.Contains(k, topov1alpha1.NodePrefix) {
+						nodeName := strings.TrimPrefix(k, topov1alpha1.NodePrefix+":")
 						node := &topov1alpha1.TopologyNode{}
 						if err := r.client.Get(ctx, types.NamespacedName{
 							Namespace: cr.GetNamespace(),

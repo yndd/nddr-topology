@@ -24,6 +24,7 @@ const (
 )
 
 const (
+	NodePrefix            = "node"          // used in topology links to identify nodes in a mh endpoint
 	KeyNode               = "node"          // used in allocation e.g. aspool and ipam
 	KeyInterface          = "interface"     // used in allocation e.g. ipam
 	KeyNodePlatform       = "platform"      // ixdd2, sr1, sr1s
