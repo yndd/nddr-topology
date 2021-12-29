@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"reflect"
+	"strings"
 
 	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
 	"github.com/yndd/ndd-runtime/pkg/resource"
@@ -50,6 +51,8 @@ type Tp interface {
 	resource.Object
 	resource.Conditioned
 
+	GetOrganizationName() string
+	GetDeploymentName() string
 	GetTopologyName() string
 	GetAdminState() string
 	GetDescription() string
@@ -57,10 +60,16 @@ type Tp interface {
 	GetKinds() []*TopoTopologyKind
 	GetKindNames() []string
 	GetKindTagsByName(string) map[string]string
+	GetPlatformByKindName(string) string
+	GetPlatformFromDefaults() string
 	InitializeResource() error
+
 	SetStatus(string)
 	SetReason(string)
 	GetStatus() string
+	SetOrganizationName(string)
+	SetDeploymentName(string)
+	SetTopologyName(string)
 }
 
 // GetCondition of this Network Node.
@@ -73,34 +82,51 @@ func (x *Topology) SetConditions(c ...nddv1.Condition) {
 	x.Status.SetConditions(c...)
 }
 
-func (x *Topology) GetTopologyName() string {
-	if reflect.ValueOf(x.Spec.TopoTopology.Name).IsZero() {
-		return ""
+func (x *Topology) GetOrganizationName() string {
+	split := strings.Split(x.GetName(), ".")
+	if len(split) >= 3 {
+		return split[0]
 	}
-	return *x.Spec.TopoTopology.Name
+	return ""
+}
+
+func (x *Topology) GetDeploymentName() string {
+	split := strings.Split(x.GetName(), ".")
+	if len(split) >= 3 {
+		return split[1]
+	}
+	return ""
+}
+
+func (x *Topology) GetTopologyName() string {
+	split := strings.Split(x.GetName(), ".")
+	if len(split) >= 3 {
+		return split[2]
+	}
+	return ""
 }
 
 func (x *Topology) GetAdminState() string {
-	if reflect.ValueOf(x.Spec.TopoTopology.AdminState).IsZero() {
+	if reflect.ValueOf(x.Spec.Topology.AdminState).IsZero() {
 		return ""
 	}
-	return *x.Spec.TopoTopology.AdminState
+	return *x.Spec.Topology.AdminState
 }
 
 func (x *Topology) GetDescription() string {
-	if reflect.ValueOf(x.Spec.TopoTopology.Description).IsZero() {
+	if reflect.ValueOf(x.Spec.Topology.Description).IsZero() {
 		return ""
 	}
-	return *x.Spec.TopoTopology.Description
+	return *x.Spec.Topology.Description
 }
 
 func (x *Topology) GetDefaultsTags() map[string]string {
 	s := make(map[string]string)
-	if reflect.ValueOf(x.Spec.TopoTopology.Defaults).IsZero() ||
-		reflect.ValueOf(x.Spec.TopoTopology.Defaults.Tag).IsZero() {
+	if reflect.ValueOf(x.Spec.Topology.Defaults).IsZero() ||
+		reflect.ValueOf(x.Spec.Topology.Defaults.Tag).IsZero() {
 		return s
 	}
-	for _, tag := range x.Spec.TopoTopology.Defaults.Tag {
+	for _, tag := range x.Spec.Topology.Defaults.Tag {
 		s[*tag.Key] = *tag.Value
 	}
 	return s
@@ -114,18 +140,18 @@ func (x *Topology) GetPlatformFromDefaults() string {
 }
 
 func (x *Topology) GetKinds() []*TopoTopologyKind {
-	if reflect.ValueOf(x.Spec.TopoTopology.Kind).IsZero() {
+	if reflect.ValueOf(x.Spec.Topology.Kind).IsZero() {
 		return nil
 	}
-	return x.Spec.TopoTopology.Kind
+	return x.Spec.Topology.Kind
 }
 
 func (x *Topology) GetKindNames() []string {
 	s := make([]string, 0)
-	if reflect.ValueOf(x.Spec.TopoTopology.Kind).IsZero() {
+	if reflect.ValueOf(x.Spec.Topology.Kind).IsZero() {
 		return s
 	}
-	for _, kind := range x.Spec.TopoTopology.Kind {
+	for _, kind := range x.Spec.Topology.Kind {
 		s = append(s, *kind.Name)
 	}
 	return s
@@ -133,10 +159,10 @@ func (x *Topology) GetKindNames() []string {
 
 func (x *Topology) GetKindTagsByName(name string) map[string]string {
 	s := make(map[string]string)
-	if reflect.ValueOf(x.Spec.TopoTopology.Kind).IsZero() {
+	if reflect.ValueOf(x.Spec.Topology.Kind).IsZero() {
 		return s
 	}
-	for _, kind := range x.Spec.TopoTopology.Kind {
+	for _, kind := range x.Spec.Topology.Kind {
 		if name == *kind.Name {
 			for _, tag := range kind.Tag {
 				s[*tag.Key] = *tag.Value
@@ -147,10 +173,10 @@ func (x *Topology) GetKindTagsByName(name string) map[string]string {
 }
 
 func (x *Topology) GetPlatformByKindName(name string) string {
-	if reflect.ValueOf(x.Spec.TopoTopology.Kind).IsZero() {
+	if reflect.ValueOf(x.Spec.Topology.Kind).IsZero() {
 		return ""
 	}
-	for _, kind := range x.Spec.TopoTopology.Kind {
+	for _, kind := range x.Spec.Topology.Kind {
 		if name == *kind.Name {
 			for _, tag := range kind.Tag {
 				if *tag.Key == KeyNodePlatform {
@@ -163,17 +189,17 @@ func (x *Topology) GetPlatformByKindName(name string) string {
 }
 
 func (x *Topology) InitializeResource() error {
-	if x.Status.TopoTopology != nil && x.Status.TopoTopology.State != nil {
+	if x.Status.Topology != nil && x.Status.Topology.State != nil {
 		// pool was already initialiazed
 		// copy the spec, but not the state
-		x.Status.TopoTopology.AdminState = x.Spec.TopoTopology.AdminState
-		x.Status.TopoTopology.Description = x.Spec.TopoTopology.Description
+		x.Status.Topology.AdminState = x.Spec.Topology.AdminState
+		x.Status.Topology.Description = x.Spec.Topology.Description
 		return nil
 	}
 
-	x.Status.TopoTopology = &NddrTopologyTopology{
-		AdminState:  x.Spec.TopoTopology.AdminState,
-		Description: x.Spec.TopoTopology.Description,
+	x.Status.Topology = &NddrTopologyTopology{
+		AdminState:  x.Spec.Topology.AdminState,
+		Description: x.Spec.Topology.Description,
 		State: &NddrTopologyTopologyState{
 			Status: utils.StringPtr(""),
 			Reason: utils.StringPtr(""),
@@ -183,16 +209,28 @@ func (x *Topology) InitializeResource() error {
 }
 
 func (x *Topology) SetStatus(s string) {
-	x.Status.TopoTopology.State.Status = &s
+	x.Status.Topology.State.Status = &s
 }
 
 func (x *Topology) SetReason(s string) {
-	x.Status.TopoTopology.State.Reason = &s
+	x.Status.Topology.State.Reason = &s
 }
 
 func (x *Topology) GetStatus() string {
-	if x.Status.TopoTopology != nil && x.Status.TopoTopology.State != nil && x.Status.TopoTopology.State.Status != nil {
-		return *x.Status.TopoTopology.State.Status
+	if x.Status.Topology != nil && x.Status.Topology.State != nil && x.Status.Topology.State.Status != nil {
+		return *x.Status.Topology.State.Status
 	}
 	return "unknown"
+}
+
+func (x *Topology) SetOrganizationName(s string) {
+	x.Status.OrganizationName = &s
+}
+
+func (x *Topology) SetDeploymentName(s string) {
+	x.Status.DeploymentName = &s
+}
+
+func (x *Topology) SetTopologyName(s string) {
+	x.Status.TopologyName = &s
 }

@@ -28,6 +28,7 @@ import (
 	"github.com/yndd/ndd-runtime/pkg/logging"
 	"github.com/yndd/ndd-runtime/pkg/meta"
 	"github.com/yndd/ndd-runtime/pkg/resource"
+	"github.com/yndd/ndd-runtime/pkg/utils"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -36,6 +37,7 @@ import (
 
 	topov1alpha1 "github.com/yndd/nddr-topology/apis/topo/v1alpha1"
 	"github.com/yndd/nddr-topology/internal/shared"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -59,6 +61,7 @@ const (
 	reasonCannotInitialize      event.Reason = "CannotInitializeResource"
 	reasonCannotGetAllocations  event.Reason = "CannotGetAllocations"
 	reasonAppLogicFailed        event.Reason = "ApplogicFailed"
+	reasonAppLogicError         event.Reason = "ApplogicError"
 	reasonCannotDeleteTags      event.Reason = "CannotDeleteTagsOfLogicalLink"
 )
 
@@ -74,6 +77,7 @@ type Reconciler struct {
 
 	hooks Hooks
 
+	newTopology     func() topov1alpha1.Tp
 	newTopologyLink func() topov1alpha1.Tl
 }
 
@@ -101,6 +105,12 @@ func WithNewReourceFn(f func() topov1alpha1.Tl) ReconcilerOption {
 	}
 }
 
+func WithNewTopologyFn(f func() topov1alpha1.Tp) ReconcilerOption {
+	return func(r *Reconciler) {
+		r.newTopology = f
+	}
+}
+
 // WithRecorder specifies how the Reconciler should record Kubernetes events.
 func WithRecorder(er event.Recorder) ReconcilerOption {
 	return func(r *Reconciler) {
@@ -118,6 +128,7 @@ func defaultMRManaged(m ctrl.Manager) mrManaged {
 func Setup(mgr ctrl.Manager, o controller.Options, nddcopts *shared.NddControllerOptions) error {
 	name := "nddr/" + strings.ToLower(topov1alpha1.TopologyLinkGroupKind)
 	fn := func() topov1alpha1.Tl { return &topov1alpha1.TopologyLink{} }
+	tpfn := func() topov1alpha1.Tp { return &topov1alpha1.Topology{} }
 
 	r := NewReconciler(mgr,
 		WithLogger(nddcopts.Logger.WithValues("controller", name)),
@@ -126,6 +137,7 @@ func Setup(mgr ctrl.Manager, o controller.Options, nddcopts *shared.NddControlle
 			Applicator: resource.NewAPIPatchingApplicator(mgr.GetClient()),
 		}, nddcopts.Logger.WithValues("nodehook", name))),
 		WithNewReourceFn(fn),
+		WithNewTopologyFn(tpfn),
 		WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
 	)
 
@@ -200,7 +212,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 
 		// we need to delete the tag if the member link gets deleted
 		if cr.GetLagMember() {
-			logicalLink, err := r.hooks.Get(ctx, cr)
+			topologyName := strings.Join([]string{cr.GetOrganizationName(), cr.GetDeploymentName(), cr.GetTopologyName()}, ".")
+			logicalLink, err := r.hooks.Get(ctx, cr, topologyName)
 			if err == nil {
 				r.log.Debug("logical link exists", "Logical Link", logicalLink.GetName())
 				//for the multi-homed case we need to delete the tags of the member links
@@ -250,11 +263,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		return reconcile.Result{Requeue: true}, errors.Wrap(r.client.Status().Update(ctx, cr), errUpdateStatus)
 	}
 
-	if err := r.handleAppLogic(ctx, cr); err != nil {
-		record.Event(cr, event.Warning(reasonAppLogicFailed, err))
-		log.Debug("handle applogic failed", "error", err)
+	msg, err := r.handleAppLogic(ctx, cr)
+	if err != nil {
+		record.Event(cr, event.Warning(reasonAppLogicError, err))
+		log.Debug("handle applogic error", "error", err)
 		cr.SetConditions(nddv1.ReconcileError(err), topov1alpha1.NotReady())
 		return reconcile.Result{RequeueAfter: shortWait}, errors.Wrap(r.client.Status().Update(ctx, cr), errUpdateStatus)
+	}
+	if msg != nil {
+		//record.Event(cr, event.(reasonAppLogicFailed, msg))
+		log.Debug("handle applogic failed", "msg", msg)
+		cr.SetConditions(nddv1.ReconcileSuccess(), topov1alpha1.NotReady())
+		return reconcile.Result{}, errors.Wrap(r.client.Status().Update(ctx, cr), errUpdateStatus)
 	}
 
 	cr.SetConditions(nddv1.ReconcileSuccess(), topov1alpha1.Ready())
@@ -262,28 +282,35 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 	return reconcile.Result{}, errors.Wrap(r.client.Status().Update(ctx, cr), errUpdateStatus)
 }
 
-func (r *Reconciler) handleAppLogic(ctx context.Context, cr topov1alpha1.Tl) error {
-	// get the topology
-	topo := &topov1alpha1.Topology{}
+func (r *Reconciler) handleAppLogic(ctx context.Context, cr topov1alpha1.Tl) (*string, error) {
+	topologyName := strings.Join([]string{cr.GetOrganizationName(), cr.GetDeploymentName(), cr.GetTopologyName()}, ".")
+
+	// get the topo
+	topo := r.newTopology()
 	if err := r.client.Get(ctx, types.NamespacedName{
 		Namespace: cr.GetNamespace(),
-		Name:      cr.GetTopologyName()}, topo); err != nil {
-		// can happen when the topology is not found
-		return err
+		Name:      topologyName}, topo); err != nil {
+		// can happen when the resource is not found
+		cr.SetStatus("down")
+		cr.SetReason("topology not found")
+		return nil, errors.Wrap(err, "topology not found")
 	}
-	// topology found
+	if topo.GetCondition(topov1alpha1.ConditionKindReady).Status != corev1.ConditionTrue {
+		cr.SetStatus("down")
+		cr.SetReason("topology not found or ready")
+		return nil, errors.New("topology not ready")
+	}
 
-	if err := r.handleStatus(ctx, cr, topo); err != nil {
-		return err
+	// topology found and ready
+
+	if err := r.handleStatus(ctx, cr, topo, topologyName); err != nil {
+		return nil, err
 	}
 
-	if err := r.parseLink(ctx, cr); err != nil {
-		return err
-	}
-	return nil
+	return r.parseLink(ctx, cr, topologyName)
 }
 
-func (r *Reconciler) handleStatus(ctx context.Context, cr topov1alpha1.Tl, topo *topov1alpha1.Topology) error {
+func (r *Reconciler) handleStatus(ctx context.Context, cr topov1alpha1.Tl, topo topov1alpha1.Tp, topologyName string) error {
 	// topology found
 
 	if topo.GetStatus() == "down" {
@@ -301,85 +328,18 @@ func (r *Reconciler) handleStatus(ctx context.Context, cr topov1alpha1.Tl, topo 
 	return nil
 }
 
-func (r *Reconciler) parseLink(ctx context.Context, cr topov1alpha1.Tl) error {
+func (r *Reconciler) parseLink(ctx context.Context, cr topov1alpha1.Tl, topologyName string) (*string, error) {
 	// parse link
 
-	// validates if the nodes of the links are present in the k8s api are not
+	// validates if the nodes if the links are present in the k8s api are not
 	// if an error occurs during validation an error is returned
-	if err := r.validateNodes(ctx, cr); err != nil {
-		return err
+	msg, err := r.validateNodes(ctx, cr, topologyName)
+	if err != nil {
+		return msg, err
 	}
-	/*
-		if cr.GetEndPointAMultiHoming() && cr.GetLag() {
-			// when we are in a multi-homed case for the logical endpoint
-			// we need to validate if the endpoints still exists
-			found := false
-			for k, v := range cr.GetEndpointATag() {
-				if strings.Contains(k, topov1alpha1.NodePrefix) {
-					nodeName := strings.TrimPrefix(k, topov1alpha1.NodePrefix+":")
-					node := &topov1alpha1.TopologyNode{}
-					if err := r.client.Get(ctx, types.NamespacedName{
-						Namespace: cr.GetNamespace(),
-						Name:      nodeName}, node); err != nil {
-						if resource.IgnoreNotFound(err) != nil {
-							return err
-						}
-						// node no longer exists, we can delete the node tags from the logocal element
-						if err := r.hooks.DeleteApplyNode(ctx, cr, 0, k, v); err != nil {
-							return err
-						}
-					} else {
-						found = true
-					}
-				}
-			}
-			if !found {
-				// when none of the mh nodes are found we can delete the logical link
-				if err := r.hooks.Delete(ctx, cr); err != nil {
-					return err
-				}
-				r.log.Debug("none of the member links found, delete the mh link")
-				return nil
-			}
-		} else {
-			nameNodeA := cr.GetEndpointANodeName()
-			//interfaceNameA := cr.GetEndpointAInterfaceName()
-			nodeA := &topov1alpha1.TopologyNode{}
-			if err := r.client.Get(ctx, types.NamespacedName{
-				Namespace: cr.GetNamespace(),
-				Name:      nameNodeA}, nodeA); err != nil {
-				// for a lag when the node no longer exists we can delete the logical link
-				if cr.GetLag() {
-					if resource.IgnoreNotFound(err) != nil {
-						return err
-					}
-					// node no longer exists, we can delete the logical element
-					if err := r.hooks.Delete(ctx, cr); err != nil {
-						return err
-					}
-					return nil
-				}
-				// node A is not found
-				cr.SetStatus("down")
-				cr.SetReason("nodeA not found")
-				return err
-			}
-		}
-
-		if !cr.GetEndPointBMultiHoming() {
-			nameNodeB := cr.GetEndpointBNodeName()
-			//interfaceNameB := cr.GetEndpointBInterfaceName()
-			nodeB := &topov1alpha1.TopologyNode{}
-			if err := r.client.Get(ctx, types.NamespacedName{
-				Namespace: cr.GetNamespace(),
-				Name:      nameNodeB}, nodeB); err != nil {
-				// node A is not found
-				cr.SetStatus("down")
-				cr.SetReason("nodeB not found")
-				return err
-			}
-		}
-	*/
+	if msg != nil {
+		return msg, nil
+	}
 
 	// for infra links we set the kind at the link level using the information from the spec
 	if cr.GetEndPointAKind() == topov1alpha1.LinkEPKindInfra.String() && cr.GetEndPointBKind() == topov1alpha1.LinkEPKindInfra.String() {
@@ -389,21 +349,27 @@ func (r *Reconciler) parseLink(ctx context.Context, cr topov1alpha1.Tl) error {
 	if cr.GetLag() {
 		// this is a logical link (single homes or multihomed), we dont need to process it since the member links take care
 		// of crud operation
-		return nil
+		cr.SetOrganizationName(cr.GetOrganizationName())
+		cr.SetDeploymentName(cr.GetDeploymentName())
+		cr.SetTopologyName(cr.GetTopologyName())
+		return nil, nil
 	}
 
 	// check if the link is part of a lag
 	if cr.GetLagMember() {
-		logicalLink, err := r.hooks.Get(ctx, cr)
+		logicalLink, err := r.hooks.Get(ctx, cr, topologyName)
 		if err != nil {
 			if resource.IgnoreNotFound(err) != nil {
-				return err
+				return nil, err
 			}
-			if err := r.hooks.Create(ctx, cr); err != nil {
-				return err
+			if err := r.hooks.Create(ctx, cr, topologyName); err != nil {
+				return nil, err
 			}
 			r.log.Debug("logical link created")
-			return nil
+			cr.SetOrganizationName(cr.GetOrganizationName())
+			cr.SetDeploymentName(cr.GetDeploymentName())
+			cr.SetTopologyName(cr.GetTopologyName())
+			return nil, nil
 
 		}
 		r.log.Debug("logical link exists", "Logical Link", logicalLink.GetName())
@@ -411,15 +377,17 @@ func (r *Reconciler) parseLink(ctx context.Context, cr topov1alpha1.Tl) error {
 		// for the multi-homed case we need to add the tags of the other member links
 		// that match the mh name
 		if err := r.hooks.Apply(ctx, cr, logicalLink); err != nil {
-			return err
+			return nil, err
 		}
 
-		return nil
 	}
-	return nil
+	cr.SetOrganizationName(cr.GetOrganizationName())
+	cr.SetDeploymentName(cr.GetDeploymentName())
+	cr.SetTopologyName(cr.GetTopologyName())
+	return nil, nil
 }
 
-func (r *Reconciler) validateNodes(ctx context.Context, cr topov1alpha1.Tl) error {
+func (r *Reconciler) validateNodes(ctx context.Context, cr topov1alpha1.Tl, topologyName string) (*string, error) {
 	for i := 0; i <= 1; i++ {
 		var multihoming bool
 		var nodeName string
@@ -451,14 +419,14 @@ func (r *Reconciler) validateNodes(ctx context.Context, cr topov1alpha1.Tl) erro
 						node := &topov1alpha1.TopologyNode{}
 						if err := r.client.Get(ctx, types.NamespacedName{
 							Namespace: cr.GetNamespace(),
-							Name:      nodeName}, node); err != nil {
+							Name:      strings.Join([]string{topologyName, nodeName}, ".")}, node); err != nil {
 							if resource.IgnoreNotFound(err) != nil {
-								return err
+								return nil, err
 							}
 							r.log.Debug("mh-ep logical-link:: member node not found, delete the ep node tags", "nodeName", nodeName)
 							// node no longer exists, we can delete the node tags from the logocal element
 							if err := r.hooks.DeleteApplyNode(ctx, cr, 0, k, v); err != nil {
-								return err
+								return nil, err
 							}
 						} else {
 							found = true
@@ -468,26 +436,26 @@ func (r *Reconciler) validateNodes(ctx context.Context, cr topov1alpha1.Tl) erro
 				if !found {
 					// when none of the mh nodes are found we can delete the logical link
 					if err := r.hooks.Delete(ctx, cr); err != nil {
-						return err
+						return nil, err
 					}
 					r.log.Debug("mh-ep logical-link: none of the member nodes wwere found, delete the logical-link")
-					return nil
+					return nil, nil
 				}
 			} else {
 				node := &topov1alpha1.TopologyNode{}
 				if err := r.client.Get(ctx, types.NamespacedName{
 					Namespace: cr.GetNamespace(),
-					Name:      nodeName}, node); err != nil {
+					Name:      strings.Join([]string{topologyName, nodeName}, ".")}, node); err != nil {
 					if resource.IgnoreNotFound(err) != nil {
-						return err
+						return nil, err
 					}
 					r.log.Debug("sh-ep logical-link: node not found, delete the logical-link", "nodeName", nodeName)
 					// node no longer exists, we can delete the logical element
 					if err := r.hooks.Delete(ctx, cr); err != nil {
-						return err
+						return nil, err
 					}
 					// when delete is successfull we finish/return
-					return nil
+					return nil, nil
 				}
 			}
 		} else {
@@ -495,13 +463,13 @@ func (r *Reconciler) validateNodes(ctx context.Context, cr topov1alpha1.Tl) erro
 			node := &topov1alpha1.TopologyNode{}
 			if err := r.client.Get(ctx, types.NamespacedName{
 				Namespace: cr.GetNamespace(),
-				Name:      nodeName}, node); err != nil {
+				Name:      strings.Join([]string{topologyName, nodeName}, ".")}, node); err != nil {
 				r.log.Debug("individual link: node not found", "nodeName", nodeName)
 				cr.SetStatus("down")
 				cr.SetReason(fmt.Sprintf("node %d not found", i))
-				return err
+				return utils.StringPtr(fmt.Sprintf("node %d not found", i)), nil
 			}
 		}
 	}
-	return nil
+	return nil, nil
 }

@@ -38,22 +38,22 @@ const (
 // A Hooks performs operations to desploy/destroy .
 type Hooks interface {
 	// Get performs operations to validate the child resources
-	Get(ctx context.Context, cr topov1alpha1.Tl) (*topov1alpha1.TopologyLink, error)
+	Get(context.Context, topov1alpha1.Tl, string) (*topov1alpha1.TopologyLink, error)
 
 	// Create performs operations to deploy the child resources
-	Create(ctx context.Context, cr topov1alpha1.Tl) error
+	Create(context.Context, topov1alpha1.Tl, string) error
 
 	// Delete performs operations to deploy the child resources
-	Delete(ctx context.Context, cr topov1alpha1.Tl) error
+	Delete(context.Context, topov1alpha1.Tl) error
 
 	// apply performs operations to update the resource
-	Apply(ctx context.Context, cr topov1alpha1.Tl, mhtl *topov1alpha1.TopologyLink) error
+	Apply(context.Context, topov1alpha1.Tl, *topov1alpha1.TopologyLink) error
 
 	// apply performs operations to update the resource
-	DeleteApply(ctx context.Context, cr topov1alpha1.Tl, mhtl *topov1alpha1.TopologyLink) error
+	DeleteApply(context.Context, topov1alpha1.Tl, *topov1alpha1.TopologyLink) error
 
 	// deletes the node/interfacename from the endpoint tags
-	DeleteApplyNode(ctx context.Context, cr topov1alpha1.Tl, i int, nodeName, interfaceName string) error
+	DeleteApplyNode(context.Context, topov1alpha1.Tl, int, string, string) error
 }
 
 // DeviceDriverHooks performs operations to deploy the device driver.
@@ -69,8 +69,8 @@ func NewHook(client resource.ClientApplicator, log logging.Logger) Hooks {
 	}
 }
 
-func (h *Hook) Get(ctx context.Context, cr topov1alpha1.Tl) (*topov1alpha1.TopologyLink, error) {
-	link := buildLogicalTopologyLink(cr)
+func (h *Hook) Get(ctx context.Context, cr topov1alpha1.Tl, topologyName string) (*topov1alpha1.TopologyLink, error) {
+	link := buildLogicalTopologyLink(cr, topologyName)
 	h.log.Debug("hook get", "logical link name", link.GetName())
 	if err := h.client.Get(ctx, types.NamespacedName{Namespace: cr.GetNamespace(), Name: link.GetName()}, link); err != nil {
 		return nil, errors.Wrap(err, errGetLink)
@@ -78,8 +78,8 @@ func (h *Hook) Get(ctx context.Context, cr topov1alpha1.Tl) (*topov1alpha1.Topol
 	return link, nil
 }
 
-func (h *Hook) Create(ctx context.Context, cr topov1alpha1.Tl) error {
-	link := buildLogicalTopologyLink(cr)
+func (h *Hook) Create(ctx context.Context, cr topov1alpha1.Tl, topologyName string) error {
+	link := buildLogicalTopologyLink(cr, topologyName)
 	if err := h.client.Apply(ctx, link); err != nil {
 		return errors.Wrap(err, errApplyLink)
 	}

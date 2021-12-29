@@ -28,7 +28,7 @@ const (
 	KeyNode               = "node"          // used in allocation e.g. aspool and ipam
 	KeyInterface          = "interface"     // used in allocation e.g. ipam
 	KeyNodePlatform       = "platform"      // ixdd2, sr1, sr1s
-	KeyNodePosition       = "position"      // server, leaf, spine, superspine, borderleaf, dcgw
+	KeyNodePosition       = "position"      // server, leaf, spine, superspine, borderleaf, dcgw, server
 	KeyNodeIndex          = "index"         // index for determinsitic allocations
 	KeyLink               = "link"          // used in allocation
 	KeyLinkLagMember      = "lag-member"    // true or false (default) -> this is set in the config

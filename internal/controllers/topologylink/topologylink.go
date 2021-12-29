@@ -24,6 +24,7 @@ import (
 
 	"github.com/yndd/ndd-runtime/pkg/meta"
 	"github.com/yndd/ndd-runtime/pkg/utils"
+	nddov1 "github.com/yndd/nddo-runtime/apis/common/v1"
 	topov1alpha1 "github.com/yndd/nddr-topology/apis/topo/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -34,12 +35,12 @@ const (
 	labelPrefix = "nddo-infra"
 )
 
-func buildLogicalTopologyLink(cr topov1alpha1.Tl) *topov1alpha1.TopologyLink {
+func buildLogicalTopologyLink(cr topov1alpha1.Tl, topologyName string) *topov1alpha1.TopologyLink {
 	// the name of the logical link is set based on multi-homing or single homing
-	// sh-lag:              <logical-sh-link>-<node-name-epA>-<lag-name-epA>-<node-name-epB><lag-name-epB>
-	// mh-lag-A - sh-lag-B: <logical-mh-link>-<multihoming-A-name>-<node-name-epB><lag-name-epB>
-	// sh-lag-A - mh-lag-B: <logical-mh-link>-<node-name-epB><lag-name-epB>-<multihoming-A-name>
-	// mh-lag-A - mh-lag-B: <logical-mh-link>-<multihoming-A-name>-<multihoming-B-name>
+	// sh-lag:              <org>.<depl>.<topo>.<logical-sh-link>.<node-name-epA>.<lag-name-epA>.<node-name-epB><lag-name-epB>
+	// mh-lag-A - sh-lag-B: <org>.<depl>.<topo>.<logical-mh-link>.<multihoming-A-name>.<node-name-epB><lag-name-epB>
+	// sh-lag-A - mh-lag-B: <org>.<depl>.<topo>.<logical-mh-link>.<node-name-epB><lag-name-epB>.<multihoming-A-name>
+	// mh-lag-A - mh-lag-B: <org>.<depl>.<topo>.<logical-mh-link>.<multihoming-A-name>.<multihoming-B-name>
 
 	var (
 		name           string
@@ -47,47 +48,47 @@ func buildLogicalTopologyLink(cr topov1alpha1.Tl) *topov1alpha1.TopologyLink {
 		nodeNameB      string
 		interfaceNameA string
 		interfaceNameB string
-		epATags        []*topov1alpha1.TopoTopologyLinkEndpointsTag
-		epBTags        []*topov1alpha1.TopoTopologyLinkEndpointsTag
+		epATags        []*nddov1.Tag
+		epBTags        []*nddov1.Tag
 	)
 	//fmt.Printf("buildLogicalTopologyLink: %s mhA: %t, mhB: %t\n", cr.GetName(), cr.GetEndPointAMultiHoming(), cr.GetEndPointBMultiHoming())
 	if cr.GetEndPointAMultiHoming() || cr.GetEndPointBMultiHoming() {
 		if cr.GetEndPointAMultiHoming() {
 			// multihomed endpoint A
-			name = strings.Join([]string{mhPrefix, cr.GetEndPointAMultiHomingName()}, "-")
+			name = strings.Join([]string{topologyName, mhPrefix, cr.GetEndPointAMultiHomingName()}, ".")
 			nodeNameA = ""
 			interfaceNameA = cr.GetEndPointAMultiHomingName()
 			tagNodeName := strings.Join([]string{topov1alpha1.NodePrefix, cr.GetEndpointANodeName()}, ":")
 			epATags = cr.GetEndpointATagRaw()
-			epATags = append(epATags, []*topov1alpha1.TopoTopologyLinkEndpointsTag{
+			epATags = append(epATags, []*nddov1.Tag{
 				{Key: utils.StringPtr(topov1alpha1.KeyLinkEPMultiHoming), Value: utils.StringPtr("true")},
 				{Key: utils.StringPtr(tagNodeName), Value: utils.StringPtr(cr.GetLagAName())},
 			}...)
 		} else {
-			name = strings.Join([]string{mhPrefix, cr.GetEndpointANodeName()}, "-")
+			name = strings.Join([]string{topologyName, mhPrefix, cr.GetEndpointANodeName()}, ".")
 			nodeNameA = cr.GetEndpointANodeName()
 			interfaceNameA = cr.GetLagAName()
 			epATags = cr.GetEndpointATagRaw()
 		}
 		if cr.GetEndPointBMultiHoming() {
 			// multihomed endpoint B
-			name = strings.Join([]string{name, cr.GetEndPointBMultiHomingName()}, "-")
+			name = strings.Join([]string{topologyName, name, cr.GetEndPointBMultiHomingName()}, ".")
 			nodeNameB = ""
 			interfaceNameB = cr.GetEndPointAMultiHomingName()
 			tagNodeName := strings.Join([]string{topov1alpha1.NodePrefix, cr.GetEndpointBNodeName()}, ":")
 			epBTags = cr.GetEndpointBTagRaw()
-			epBTags = append(epBTags, []*topov1alpha1.TopoTopologyLinkEndpointsTag{
+			epBTags = append(epBTags, []*nddov1.Tag{
 				{Key: utils.StringPtr(topov1alpha1.KeyLinkEPMultiHoming), Value: utils.StringPtr("true")},
 				{Key: utils.StringPtr(tagNodeName), Value: utils.StringPtr(cr.GetLagBName())},
 			}...)
 		} else {
-			name = strings.Join([]string{name, cr.GetEndpointBNodeName()}, "-")
+			name = strings.Join([]string{topologyName, name, cr.GetEndpointBNodeName()}, ".")
 			nodeNameB = cr.GetEndpointBNodeName()
 			interfaceNameB = cr.GetLagBName()
 			epBTags = cr.GetEndpointBTagRaw()
 		}
 	} else {
-		name = strings.Join([]string{shPrefix, cr.GetEndpointANodeName(), cr.GetLagAName(), cr.GetEndpointBNodeName(), cr.GetLagBName()}, "-")
+		name = strings.Join([]string{topologyName, shPrefix, cr.GetEndpointANodeName(), cr.GetLagAName(), cr.GetEndpointBNodeName(), cr.GetLagBName()}, ".")
 		nodeNameA = cr.GetEndpointANodeName()
 		interfaceNameA = cr.GetLagAName()
 		epATags = cr.GetEndpointATagRaw()
@@ -105,8 +106,7 @@ func buildLogicalTopologyLink(cr topov1alpha1.Tl) *topov1alpha1.TopologyLink {
 			OwnerReferences: []metav1.OwnerReference{meta.AsController(meta.TypedReferenceTo(cr, topov1alpha1.TopologyLinkGroupVersionKind))},
 		},
 		Spec: topov1alpha1.TopologyLinkSpec{
-			TopologyName: utils.StringPtr(cr.GetTopologyName()),
-			TopoTopologyLink: &topov1alpha1.TopoTopologyLink{
+			TopologyLink: &topov1alpha1.TopoTopologyLink{
 				AdminState: utils.StringPtr("enable"),
 				Endpoints: []*topov1alpha1.TopoTopologyLinkEndpoints{
 					{
@@ -120,13 +120,13 @@ func buildLogicalTopologyLink(cr topov1alpha1.Tl) *topov1alpha1.TopologyLink {
 						Tag:           epBTags,
 					},
 				},
-				Tag: []*topov1alpha1.TopoTopologyLinkTag{
+				Tag: []*nddov1.Tag{
 					{Key: utils.StringPtr("lag"), Value: utils.StringPtr("true")},
 				},
 			},
 		},
 		Status: topov1alpha1.TopologyLinkStatus{
-			TopoTopologyLink: &topov1alpha1.NddrTopologyTopologyLink{
+			TopologyLink: &topov1alpha1.NddrTopologyTopologyLink{
 				Tag: cr.GetStatusTagsRaw(),
 			},
 		},

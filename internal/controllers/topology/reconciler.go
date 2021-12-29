@@ -27,12 +27,15 @@ import (
 	"github.com/yndd/ndd-runtime/pkg/logging"
 	"github.com/yndd/ndd-runtime/pkg/meta"
 	"github.com/yndd/ndd-runtime/pkg/resource"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	orgv1alpha1 "github.com/yndd/nddr-organization/apis/org/v1alpha1"
 	topov1alpha1 "github.com/yndd/nddr-topology/apis/topo/v1alpha1"
 	"github.com/yndd/nddr-topology/internal/shared"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -68,7 +71,8 @@ type Reconciler struct {
 	record  event.Recorder
 	managed mrManaged
 
-	newTopology func() topov1alpha1.Tp
+	newTopology   func() topov1alpha1.Tp
+	newDeployment func() orgv1alpha1.Dp
 }
 
 type mrManaged struct {
@@ -85,6 +89,12 @@ func WithLogger(log logging.Logger) ReconcilerOption {
 func WithNewReourceFn(f func() topov1alpha1.Tp) ReconcilerOption {
 	return func(r *Reconciler) {
 		r.newTopology = f
+	}
+}
+
+func WithNewDeploymentFn(f func() orgv1alpha1.Dp) ReconcilerOption {
+	return func(r *Reconciler) {
+		r.newDeployment = f
 	}
 }
 
@@ -105,10 +115,12 @@ func defaultMRManaged(m ctrl.Manager) mrManaged {
 func Setup(mgr ctrl.Manager, o controller.Options, nddcopts *shared.NddControllerOptions) error {
 	name := "nddr/" + strings.ToLower(topov1alpha1.TopologyGroupKind)
 	fn := func() topov1alpha1.Tp { return &topov1alpha1.Topology{} }
+	dpfn := func() orgv1alpha1.Dp { return &orgv1alpha1.Deployment{} }
 
 	r := NewReconciler(mgr,
 		WithLogger(nddcopts.Logger.WithValues("controller", name)),
 		WithNewReourceFn(fn),
+		WithNewDeploymentFn(dpfn),
 		WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
 	)
 
@@ -209,12 +221,37 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 }
 
 func (r *Reconciler) handleAppLogic(ctx context.Context, cr topov1alpha1.Tp) error {
+
+	deploymentName := strings.Join([]string{cr.GetOrganizationName(), cr.GetDeploymentName()}, ".")
+
+	// get the deployment
+	dep := r.newDeployment()
+	if err := r.client.Get(ctx, types.NamespacedName{
+		Namespace: cr.GetNamespace(),
+		Name:      deploymentName}, dep); err != nil {
+		// can happen when the deployment is not found
+		cr.SetStatus("down")
+		cr.SetReason("organization/deployment not found")
+		return errors.Wrap(err, "organization/deployment not found")
+	}
+	if dep.GetCondition(orgv1alpha1.ConditionKindReady).Status != corev1.ConditionTrue {
+		cr.SetStatus("down")
+		cr.SetReason("organization/deployment not ready")
+		return errors.New("organization/deployment not ready")
+	}
+
 	if cr.GetAdminState() == "disable" {
 		cr.SetStatus("down")
 		cr.SetReason("admin disable")
+		cr.SetOrganizationName(cr.GetOrganizationName())
+		cr.SetDeploymentName(cr.GetDeploymentName())
+		cr.SetTopologyName(cr.GetTopologyName())
 	} else {
 		cr.SetStatus("up")
 		cr.SetReason("")
+		cr.SetOrganizationName(cr.GetOrganizationName())
+		cr.SetDeploymentName(cr.GetDeploymentName())
+		cr.SetTopologyName(cr.GetTopologyName())
 	}
 	return nil
 }

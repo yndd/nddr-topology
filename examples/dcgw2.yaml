@@ -1,10 +1,10 @@
 apiVersion: topo.nddr.yndd.io/v1alpha1
 kind: TopologyNode
 metadata:
-  name: nokia.region1.fabric1.master0
+  name: nokia.region1.fabric1.dcgw2
   namespace: default
 spec:
   node:
-    kind-name: linux
+    kind-name: sros
     tag:
-    - {key: position, value: server}
+    - {key: position, value: dcgw}

@@ -20,6 +20,7 @@ import (
 	"reflect"
 
 	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
+	nddov1 "github.com/yndd/nddo-runtime/apis/common/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -43,7 +44,7 @@ type TopoTopologyLink struct {
 	Description *string                      `json:"description,omitempty"`
 	Endpoints   []*TopoTopologyLinkEndpoints `json:"endpoints,omitempty"`
 	Name        *string                      `json:"name,omitempty"`
-	Tag         []*TopoTopologyLinkTag       `json:"tag,omitempty"`
+	Tag         []*nddov1.Tag                `json:"tag,omitempty"`
 }
 
 // TopologyLinkEndpoints struct
@@ -52,50 +53,24 @@ type TopoTopologyLinkEndpoints struct {
 	// kubebuilder:validation:MaxLength=20
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern=`int-([1-9](\d){0,1}(/[abcd])?(/[1-9](\d){0,1})?/(([1-9](\d){0,1})|(1[0-1]\d)|(12[0-8])))|`
-	InterfaceName *string                         `json:"interface-name"`
-	NodeName      *string                         `json:"node-name"`
-	Tag           []*TopoTopologyLinkEndpointsTag `json:"tag,omitempty"`
-}
-
-// TopologyLinkEndpointsTag struct
-type TopoTopologyLinkEndpointsTag struct {
-	// kubebuilder:validation:MinLength=1
-	// kubebuilder:validation:MaxLength=255
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Pattern="[A-Za-z0-9 !@#$^&()|+=`~.,'/_:;?-]*"
-	Key *string `json:"key"`
-	// kubebuilder:validation:MinLength=1
-	// kubebuilder:validation:MaxLength=255
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Pattern="[A-Za-z0-9 !@#$^&()|+=`~.,'/_:;?-]*"
-	Value *string `json:"value,omitempty"`
-}
-
-// TopologyLinkTag struct
-type TopoTopologyLinkTag struct {
-	// kubebuilder:validation:MinLength=1
-	// kubebuilder:validation:MaxLength=255
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Pattern="[A-Za-z0-9 !@#$^&()|+=`~.,'/_:;?-]*"
-	Key *string `json:"key"`
-	// kubebuilder:validation:MinLength=1
-	// kubebuilder:validation:MaxLength=255
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Pattern="[A-Za-z0-9 !@#$^&()|+=`~.,'/_:;?-]*"
-	Value *string `json:"value,omitempty"`
+	InterfaceName *string       `json:"interface-name"`
+	NodeName      *string       `json:"node-name"`
+	Tag           []*nddov1.Tag `json:"tag,omitempty"`
 }
 
 // A TopologyLinkSpec defines the desired state of a TopologyLink.
 type TopologyLinkSpec struct {
 	//nddv1.ResourceSpec `json:",inline"`
-	TopologyName     *string           `json:"topology-name"`
-	TopoTopologyLink *TopoTopologyLink `json:"link,omitempty"`
+	TopologyLink *TopoTopologyLink `json:"link,omitempty"`
 }
 
 // A TopologyLinkStatus represents the observed state of a TopologyLink.
 type TopologyLinkStatus struct {
 	nddv1.ConditionedStatus `json:",inline"`
-	TopoTopologyLink        *NddrTopologyTopologyLink `json:"link,omitempty"`
+	OrganizationName        *string                   `json:"organization-name,omitempty"`
+	DeploymentName          *string                   `json:"deployment-name,omitempty"`
+	TopologyName            *string                   `json:"topology-name,omitempty"`
+	TopologyLink            *NddrTopologyTopologyLink `json:"link,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -104,6 +79,17 @@ type TopologyLinkStatus struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="SYNC",type="string",JSONPath=".status.conditions[?(@.kind=='Synced')].status"
 // +kubebuilder:printcolumn:name="STATUS",type="string",JSONPath=".status.conditions[?(@.kind=='Ready')].status"
+// +kubebuilder:printcolumn:name="ORG",type="string",JSONPath=".status.organization-name"
+// +kubebuilder:printcolumn:name="DEPL",type="string",JSONPath=".status.deployment-name"
+// +kubebuilder:printcolumn:name="TOPO",type="string",JSONPath=".status.topology-name"
+// +kubebuilder:printcolumn:name="LAG",type="string",JSONPath=".spec.link.tag[?(@.key=='lag')].value"
+// +kubebuilder:printcolumn:name="MEMBER",type="string",JSONPath=".spec.link.tag[?(@.key=='lag-member')].value"
+// +kubebuilder:printcolumn:name="NODE-EPA",type="string",JSONPath=".spec.link.endpoints[0].node-name"
+// +kubebuilder:printcolumn:name="ITFCE-EPA",type="string",JSONPath=".spec.link.endpoints[0].interface-name"
+// +kubebuilder:printcolumn:name="MH-EPA",type="string",JSONPath=".spec.link.endpoints[0].tag[?(@.key=='multihoming')].value"
+// +kubebuilder:printcolumn:name="NODE-EPB",type="string",JSONPath=".spec.link.endpoints[1].node-name"
+// +kubebuilder:printcolumn:name="ITFCE-EPB",type="string",JSONPath=".spec.link.endpoints[1].interface-name"
+// +kubebuilder:printcolumn:name="MH-EPB",type="string",JSONPath=".spec.link.endpoints[1].tag[?(@.key=='multihoming')].value"
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 type TopologyLink struct {
 	metav1.TypeMeta   `json:",inline"`

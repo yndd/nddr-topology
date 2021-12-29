@@ -16,6 +16,10 @@ limitations under the License.
 
 package v1alpha1
 
+import (
+	nddov1 "github.com/yndd/nddo-runtime/apis/common/v1"
+)
+
 // NddrTopology struct
 type NddrTopology struct {
 	Topology []*NddrTopologyTopology `json:"topology,omitempty"`
@@ -35,25 +39,13 @@ type NddrTopologyTopology struct {
 
 // NddrTopologyTopologyDefaults struct
 type NddrTopologyTopologyDefaults struct {
-	Tag []*NddrTopologyTopologyDefaultsTag `json:"tag,omitempty"`
-}
-
-// NddrTopologyTopologyDefaultsTag struct
-type NddrTopologyTopologyDefaultsTag struct {
-	Key   *string `json:"key"`
-	Value *string `json:"value,omitempty"`
+	Tag []*nddov1.Tag `json:"tag,omitempty"`
 }
 
 // NddrTopologyTopologyKind struct
 type NddrTopologyTopologyKind struct {
-	Name *string                        `json:"name"`
-	Tag  []*NddrTopologyTopologyKindTag `json:"tag,omitempty"`
-}
-
-// NddrTopologyTopologyKindTag struct
-type NddrTopologyTopologyKindTag struct {
-	Key   *string `json:"key"`
-	Value *string `json:"value,omitempty"`
+	Name *string       `json:"name"`
+	Tag  []*nddov1.Tag `json:"tag,omitempty"`
 }
 
 // NddrTopologyTopologyLink struct
@@ -63,20 +55,14 @@ type NddrTopologyTopologyLink struct {
 	Endpoints   []*NddrTopologyTopologyLinkEndpoints `json:"endpoints,omitempty"`
 	Name        *string                              `json:"name,omitempty"`
 	State       *NddrTopologyTopologyLinkState       `json:"state,omitempty"`
-	Tag         []*NddrTopologyTopologyLinkTag       `json:"tag,omitempty"`
+	Tag         []*nddov1.Tag                        `json:"tag,omitempty"`
 }
 
 // NddrTopologyTopologyLinkEndpoints struct
 type NddrTopologyTopologyLinkEndpoints struct {
-	InterfaceName *string                                 `json:"interface-name"`
-	NodeName      *string                                 `json:"node-name"`
-	Tag           []*NddrTopologyTopologyLinkEndpointsTag `json:"tag,omitempty"`
-}
-
-// NddrTopologyTopologyLinkEndpointsTag struct
-type NddrTopologyTopologyLinkEndpointsTag struct {
-	Key   *string `json:"key"`
-	Value *string `json:"value,omitempty"`
+	InterfaceName *string       `json:"interface-name"`
+	NodeName      *string       `json:"node-name"`
+	Tag           []*nddov1.Tag `json:"tag,omitempty"`
 }
 
 // NddrTopologyTopologyLinkState struct
@@ -84,7 +70,7 @@ type NddrTopologyTopologyLinkState struct {
 	Reason *string                              `json:"reason,omitempty"`
 	Status *string                              `json:"status,omitempty"`
 	Node   []*NddrTopologyTopologyLinkStateNode `json:"node,omitempty"`
-	Tag    []*NddrTopologyTopologyLinkStateTag  `json:"tag,omitempty"`
+	Tag    []*nddov1.Tag                        `json:"tag,omitempty"`
 }
 
 // NddrTopologyTopologyLinkStateNode struct
@@ -100,18 +86,6 @@ type NddrTopologyTopologyLinkStateNodeEndpoint struct {
 	Name          *string `json:"name,omitempty"`
 }
 
-// NddrTopologyTopologyLinkStateTag struct
-type NddrTopologyTopologyLinkStateTag struct {
-	Key   *string `json:"key"`
-	Value *string `json:"value,omitempty"`
-}
-
-// NddrTopologyTopologyLinkTag struct
-type NddrTopologyTopologyLinkTag struct {
-	Key   *string `json:"key"`
-	Value *string `json:"value,omitempty"`
-}
-
 // NddrTopologyTopologyNode struct
 type NddrTopologyTopologyNode struct {
 	AdminState  *string                        `json:"admin-state,omitempty"`
@@ -119,7 +93,7 @@ type NddrTopologyTopologyNode struct {
 	KindName    *string                        `json:"kind-name,omitempty"`
 	Name        *string                        `json:"name,omitempty"`
 	State       *NddrTopologyTopologyNodeState `json:"state,omitempty"`
-	Tag         []*NddrTopologyTopologyNodeTag `json:"tag,omitempty"`
+	Tag         []*nddov1.Tag                  `json:"tag,omitempty"`
 }
 
 // NddrTopologyTopologyNodeState struct
@@ -128,7 +102,7 @@ type NddrTopologyTopologyNodeState struct {
 	LastUpdate *string                                  `json:"last-update,omitempty"`
 	Reason     *string                                  `json:"reason,omitempty"`
 	Status     *string                                  `json:"status,omitempty"`
-	Tag        []*NddrTopologyTopologyNodeStateTag      `json:"tag,omitempty"`
+	Tag        []*nddov1.Tag                            `json:"tag,omitempty"`
 }
 
 // NddrTopologyTopologyNodeStateEndpoint struct
@@ -138,29 +112,11 @@ type NddrTopologyTopologyNodeStateEndpoint struct {
 	Name       *string `json:"name"`
 }
 
-// NddrTopologyTopologyNodeStateTag struct
-type NddrTopologyTopologyNodeStateTag struct {
-	Key   *string `json:"key"`
-	Value *string `json:"value,omitempty"`
-}
-
-// NddrTopologyTopologyNodeTag struct
-type NddrTopologyTopologyNodeTag struct {
-	Key   *string `json:"key"`
-	Value *string `json:"value,omitempty"`
-}
-
 // NddrTopologyTopologyState struct
 type NddrTopologyTopologyState struct {
-	Reason *string                         `json:"reason,omitempty"`
-	Status *string                         `json:"status,omitempty"`
-	Tag    []*NddrTopologyTopologyStateTag `json:"tag,omitempty"`
-}
-
-// NddrTopologyTopologyStateTag struct
-type NddrTopologyTopologyStateTag struct {
-	Key   *string `json:"key"`
-	Value *string `json:"value,omitempty"`
+	Reason *string       `json:"reason,omitempty"`
+	Status *string       `json:"status,omitempty"`
+	Tag    []*nddov1.Tag `json:"tag,omitempty"`
 }
 
 // Root is the root of the schema

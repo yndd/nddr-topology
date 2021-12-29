@@ -1311,6 +1311,10 @@ github.com/yndd/ndd-yang v0.1.62/go.mod h1:GT/8efIchBH1sQ6J64AM1FZDXXIaWeirkYUpb
 github.com/yndd/ndd-yang v0.1.276/go.mod h1:vcKhP5OU3oJHSEILaE0HEgZKxftcu2GFOGdS6w0TauM=
 github.com/yndd/ndd-yang v0.1.369 h1:aNLd7TIjzZ4Kx/SDG/uySwRyt98Hozixjwvv87a3FRc=
 github.com/yndd/ndd-yang v0.1.369/go.mod h1:rIFXnOALLTloxMQtqGmTq32q6V9iTVHySE4ELup7hes=
+github.com/yndd/nddo-runtime v0.0.3 h1:Ns/gyw/wPrLwHdA5v4AsCy4TS2iHXNgY8VBZWQClCZM=
+github.com/yndd/nddo-runtime v0.0.3/go.mod h1:owkCFjPV4GG0+J52NrlB6RCAW7ZvnZMQy7X9CQsgbcE=
+github.com/yndd/nddr-organization v0.0.1 h1:xyNXsG9V+caqE/oHK08I91IXXOO7wuD3DYLtyMDomtg=
+github.com/yndd/nddr-organization v0.0.1/go.mod h1:cufbLen3NK3CXcN4DD4Be2H2ML1ExKuRsDARtHe2Twg=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=

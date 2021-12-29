@@ -35,6 +35,7 @@ import (
 
 	topov1alpha1 "github.com/yndd/nddr-topology/apis/topo/v1alpha1"
 	"github.com/yndd/nddr-topology/internal/shared"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -70,6 +71,7 @@ type Reconciler struct {
 	record  event.Recorder
 	managed mrManaged
 
+	newTopology     func() topov1alpha1.Tp
 	newTopologyNode func() topov1alpha1.Tn
 }
 
@@ -90,6 +92,12 @@ func WithNewReourceFn(f func() topov1alpha1.Tn) ReconcilerOption {
 	}
 }
 
+func WithNewTopologyFn(f func() topov1alpha1.Tp) ReconcilerOption {
+	return func(r *Reconciler) {
+		r.newTopology = f
+	}
+}
+
 // WithRecorder specifies how the Reconciler should record Kubernetes events.
 func WithRecorder(er event.Recorder) ReconcilerOption {
 	return func(r *Reconciler) {
@@ -107,10 +115,12 @@ func defaultMRManaged(m ctrl.Manager) mrManaged {
 func Setup(mgr ctrl.Manager, o controller.Options, nddcopts *shared.NddControllerOptions) error {
 	name := "nddr/" + strings.ToLower(topov1alpha1.TopologyNodeGroupKind)
 	fn := func() topov1alpha1.Tn { return &topov1alpha1.TopologyNode{} }
+	tpfn := func() topov1alpha1.Tp { return &topov1alpha1.Topology{} }
 
 	r := NewReconciler(mgr,
 		WithLogger(nddcopts.Logger.WithValues("controller", name)),
 		WithNewReourceFn(fn),
+		WithNewTopologyFn(tpfn),
 		WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
 	)
 
@@ -225,14 +235,24 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 }
 
 func (r *Reconciler) handleAppLogic(ctx context.Context, cr topov1alpha1.Tn) error {
-	// get the topology
-	topo := &topov1alpha1.Topology{}
+	topologyName := strings.Join([]string{cr.GetOrganizationName(), cr.GetDeploymentName(), cr.GetTopologyName()}, ".")
+
+	// get the topo
+	topo := r.newTopology()
 	if err := r.client.Get(ctx, types.NamespacedName{
 		Namespace: cr.GetNamespace(),
-		Name:      cr.GetTopologyName()}, topo); err != nil {
-		// can happen when the topology is not found
-		return err
+		Name:      topologyName}, topo); err != nil {
+		// can happen when the resource is not found
+		cr.SetStatus("down")
+		cr.SetReason("topology not found")
+		return errors.Wrap(err, "topology not found")
 	}
+	if topo.GetCondition(topov1alpha1.ConditionKindReady).Status != corev1.ConditionTrue {
+		cr.SetStatus("down")
+		cr.SetReason("topology not found or ready")
+		return errors.New("topology not ready")
+	}
+
 	// topology found
 
 	if err := r.handleStatus(ctx, cr, topo); err != nil {
@@ -254,27 +274,24 @@ func (r *Reconciler) handleAppLogic(ctx context.Context, cr topov1alpha1.Tn) err
 			return err
 		}
 	*/
+	cr.SetOrganizationName(cr.GetOrganizationName())
+	cr.SetDeploymentName(cr.GetDeploymentName())
+	cr.SetTopologyName(cr.GetTopologyName())
 	return nil
 }
 
-func (r *Reconciler) handleStatus(ctx context.Context, cr topov1alpha1.Tn, topo *topov1alpha1.Topology) error {
-	r.log.Debug("handle node status", "topo admin status", topo.GetAdminState(), "topo status", topo.GetStatus())
-	if topo.GetAdminState() == "disable" {
+func (r *Reconciler) handleStatus(ctx context.Context, cr topov1alpha1.Tn, topo topov1alpha1.Tp) error {
+	if cr.GetAdminState() == "disable" {
 		cr.SetStatus("down")
-		cr.SetReason("parent status down")
+		cr.SetReason("admin disabled")
 	} else {
-		if cr.GetAdminState() == "disable" {
-			cr.SetStatus("down")
-			cr.SetReason("admin disabled")
-		} else {
-			cr.SetStatus("up")
-			cr.SetReason("")
-		}
+		cr.SetStatus("up")
+		cr.SetReason("")
 	}
 	return nil
 }
 
-func (r *Reconciler) setPlatform(ctx context.Context, cr topov1alpha1.Tn, topo *topov1alpha1.Topology) error {
+func (r *Reconciler) setPlatform(ctx context.Context, cr topov1alpha1.Tn, topo topov1alpha1.Tp) error {
 	r.log.Debug("Setflatform", "platform", cr.GetPlatform())
 	if cr.GetPlatform() == "" && cr.GetPosition() != topov1alpha1.NodePositionServer.String() {
 		// platform is not defined at node level

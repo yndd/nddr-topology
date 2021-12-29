@@ -1,7 +1,7 @@
 apiVersion: topo.nddr.yndd.io/v1alpha1
 kind: Topology
 metadata:
-  name: topo-test
+  name: nokia.region1.fabric1
   namespace: default
 spec:
   topology:

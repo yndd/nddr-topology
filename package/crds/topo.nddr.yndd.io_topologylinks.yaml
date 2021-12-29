@@ -1,5 +1,5 @@
 
----
+
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
@@ -22,6 +22,39 @@ spec:
       type: string
     - jsonPath: .status.conditions[?(@.kind=='Ready')].status
       name: STATUS
+      type: string
+    - jsonPath: .status.organization-name
+      name: ORG
+      type: string
+    - jsonPath: .status.deployment-name
+      name: DEPL
+      type: string
+    - jsonPath: .status.topology-name
+      name: TOPO
+      type: string
+    - jsonPath: .spec.link.tag[?(@.key=='lag')].value
+      name: LAG
+      type: string
+    - jsonPath: .spec.link.tag[?(@.key=='lag-member')].value
+      name: MEMBER
+      type: string
+    - jsonPath: .spec.link.endpoints[0].node-name
+      name: NODE-EPA
+      type: string
+    - jsonPath: .spec.link.endpoints[0].interface-name
+      name: ITFCE-EPA
+      type: string
+    - jsonPath: .spec.link.endpoints[0].tag[?(@.key=='multihoming')].value
+      name: MH-EPA
+      type: string
+    - jsonPath: .spec.link.endpoints[1].node-name
+      name: NODE-EPB
+      type: string
+    - jsonPath: .spec.link.endpoints[1].interface-name
+      name: ITFCE-EPB
+      type: string
+    - jsonPath: .spec.link.endpoints[1].tag[?(@.key=='multihoming')].value
+      name: MH-EPB
       type: string
     - jsonPath: .metadata.creationTimestamp
       name: AGE
@@ -47,7 +80,7 @@ spec:
             description: A TopologyLinkSpec defines the desired state of a TopologyLink.
             properties:
               link:
-                description: TopoTopologyLink struct
+                description: nddv1.ResourceSpec `json:",inline"`
                 properties:
                   admin-state:
                     default: enable
@@ -71,18 +104,11 @@ spec:
                           type: string
                         tag:
                           items:
-                            description: TopologyLinkEndpointsTag struct
                             properties:
                               key:
-                                description: kubebuilder:validation:MinLength=1 kubebuilder:validation:MaxLength=255
-                                pattern: '[A-Za-z0-9 !@#$^&()|+=`~.,''/_:;?-]*'
                                 type: string
                               value:
-                                description: kubebuilder:validation:MinLength=1 kubebuilder:validation:MaxLength=255
-                                pattern: '[A-Za-z0-9 !@#$^&()|+=`~.,''/_:;?-]*'
                                 type: string
-                            required:
-                            - key
                             type: object
                           type: array
                       required:
@@ -94,26 +120,14 @@ spec:
                     type: string
                   tag:
                     items:
-                      description: TopologyLinkTag struct
                       properties:
                         key:
-                          description: kubebuilder:validation:MinLength=1 kubebuilder:validation:MaxLength=255
-                          pattern: '[A-Za-z0-9 !@#$^&()|+=`~.,''/_:;?-]*'
                           type: string
                         value:
-                          description: kubebuilder:validation:MinLength=1 kubebuilder:validation:MaxLength=255
-                          pattern: '[A-Za-z0-9 !@#$^&()|+=`~.,''/_:;?-]*'
                           type: string
-                      required:
-                      - key
                       type: object
                     type: array
                 type: object
-              topology-name:
-                description: nddv1.ResourceSpec `json:",inline"`
-                type: string
-            required:
-            - topology-name
             type: object
           status:
             description: A TopologyLinkStatus represents the observed state of a TopologyLink.
@@ -151,6 +165,8 @@ spec:
                   - status
                   type: object
                 type: array
+              deployment-name:
+                type: string
               link:
                 description: NddrTopologyTopologyLink struct
                 properties:
@@ -168,14 +184,11 @@ spec:
                           type: string
                         tag:
                           items:
-                            description: NddrTopologyTopologyLinkEndpointsTag struct
                             properties:
                               key:
                                 type: string
                               value:
                                 type: string
-                            required:
-                            - key
                             type: object
                           type: array
                       required:
@@ -215,30 +228,28 @@ spec:
                         type: string
                       tag:
                         items:
-                          description: NddrTopologyTopologyLinkStateTag struct
                           properties:
                             key:
                               type: string
                             value:
                               type: string
-                          required:
-                          - key
                           type: object
                         type: array
                     type: object
                   tag:
                     items:
-                      description: NddrTopologyTopologyLinkTag struct
                       properties:
                         key:
                           type: string
                         value:
                           type: string
-                      required:
-                      - key
                       type: object
                     type: array
                 type: object
+              organization-name:
+                type: string
+              topology-name:
+                type: string
             type: object
         type: object
     served: true
